@@ -109,9 +109,9 @@ print(f"Using device: {device}")
 
 model.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=0, threshold=0.1, cooldown=0, min_lr=0.0001, eps=1e-08)
+    optimizer, mode='min', factor=0.2, patience=0, threshold=0.0001, cooldown=0, min_lr=0.0001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 
 # %%
@@ -187,11 +187,10 @@ for t in range(epochs):
     print(f'Current learning rate: {curr_lr}')
     train_losses = train_loop(ds_train_np, model, loss_fn, optimizer)
     valid_loss = valid_loop(ds_valid_np, model, loss_fn)
-    {train_history.append(val) for val in train_losses}
+    train_history.extend(train_losses)
     valid_history.append(valid_loss)
     lr_scheduler.step(valid_history[-1])
 print("Done!")
-
 
 # %%
 
