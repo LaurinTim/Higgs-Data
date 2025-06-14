@@ -21,6 +21,9 @@ SEED = 0
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 
+device = torch.set_default_device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 # %%
 
 feature_description = {
@@ -108,7 +111,7 @@ model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=0, threshold=0.0001, cooldown=0, min_lr=0.001, eps=1e-08)
+    optimizer, mode='min', factor=0.2, patience=0, threshold=0.1, cooldown=0, min_lr=0.0001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 
 # %%
@@ -116,8 +119,8 @@ loss_fn = nn.BCEWithLogitsLoss()
 train_history = []
 valid_history = []
 
-def train_loop(data, model, loss_fn, optimizer):
-    global train_history
+def train_loop(data, model, loss_fn, optimizer):    
+    losses = []
     
     # Set the model to training mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
@@ -134,7 +137,7 @@ def train_loop(data, model, loss_fn, optimizer):
         outputs = model(features)
         outputs = torch.squeeze(outputs)
         loss = loss_fn(outputs, labels)
-        train_history.append(loss.cpu().detach().numpy())
+        losses.append(loss.cpu().detach().numpy())
 
         # Backpropagation
         loss.backward()
@@ -142,11 +145,11 @@ def train_loop(data, model, loss_fn, optimizer):
 
         if train_step % 1000 == 0:
             loss = loss.item()
-            print(f"loss: {loss:>7f}")
+            print(f"loss: {loss:4f}")
             
-def test_loop(data, model, loss_fn):
-    global valid_history
-    
+    return losses
+            
+def valid_loop(data, model, loss_fn):    
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -170,17 +173,23 @@ def test_loop(data, model, loss_fn):
             sum_count += 1
             
         avg_loss = sum_loss / max(sum_count, 1)
-        valid_history.append(avg_loss)
 
-    print(f"Validation average loss: {avg_loss}\n")
+    print(f"Validation average loss: {avg_loss:4f}\n")
+    
+    return avg_loss
 
 # %%
 
-epochs = 10
+epochs = 5
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
-    train_loop(ds_train_np, model, loss_fn, optimizer)
-    test_loop(ds_valid_np, model, loss_fn)
+    curr_lr = optimizer.param_groups[0]['lr']
+    print(f'Current learning rate: {curr_lr}')
+    train_losses = train_loop(ds_train_np, model, loss_fn, optimizer)
+    valid_loss = valid_loop(ds_valid_np, model, loss_fn)
+    {train_history.append(val) for val in train_losses}
+    valid_history.append(valid_loss)
+    lr_scheduler.step(valid_history[-1])
 print("Done!")
 
 
@@ -192,9 +201,10 @@ x_valid = np.linspace(0, epochs-1, epochs)
 plt.figure(figsize=(15,8))
 
 plt.plot(x_train, train_history, c='k', label='Train')
-#plt.plot(x_valid, valid_history, c='r', linestyle='--', label='Validation')
+plt.plot(x_valid, valid_history, c='r', linestyle='--', label='Validation')
 
 plt.legend(loc='best')
+plt.show()
 
 # %%
 
