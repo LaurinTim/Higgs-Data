@@ -1,4 +1,4 @@
-import tensorflow as tf, numpy as np, pandas as pd
+import numpy as np, pandas as pd
 import torch
 from torch import nn
 import os, sys
@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 #from sklearn.metrics import roc_auc_score
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
+
+import tensorflow as tf
 
 data_dir = str(Path(__file__).resolve().parent)
 
@@ -21,7 +24,8 @@ SEED = 0
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 
-device = torch.set_default_device("cuda" if torch.cuda.is_available() else "cpu")
+torch.set_default_device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # %%
@@ -104,9 +108,6 @@ model = NeuralNetwork()
 
 # %%
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
-
 model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
@@ -180,7 +181,7 @@ def valid_loop(data, model, loss_fn):
 
 # %%
 
-epochs = 5
+epochs = 10
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
