@@ -1,28 +1,20 @@
 import tensorflow as tf, numpy as np, pandas as pd
 import os, sys
 from pathlib import Path
+import importlib.util
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-os.chdir(Path(__file__).resolve().parent)
+data_dir = str(Path(__file__).resolve().parent)
 
-data_dir = os.getcwd()
-
-# %%
-
-import utils as u
-
-# %%
-
-files = [data_dir + '\\training\\' + val for val in os.listdir(data_dir + '\\training')]
+spec = importlib.util.spec_from_file_location("utils", data_dir + '\\utils.py')
+u = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(u)
 
 # %%
 
 train_files = tf.io.gfile.glob(data_dir + '\\training' + '\*.tfrecord')
 valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\*.tfrecord')
-
-
 
 # %%
 
