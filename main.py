@@ -36,8 +36,8 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
 
 dataset_size = int(11e6)
 validation_size = int(5e5)
@@ -96,7 +96,7 @@ class NeuralNetwork(nn.Module):
             DenseBlock(56, 56, nn.Tanh(), 0.1),
             DenseBlock(56, 56, nn.Tanh(), 0.1),
             DenseBlock(56, 56, nn.Tanh(), 0.1),
-            DenseBlock(56, 56, nn.Tanh(), 0.1),
+            DenseBlock(56, 56, nn.Tanh(), 0.0),
             DenseBlock(56, 56, nn.Tanh(), 0.0),
             nn.Linear(56, 1),
             nn.Sigmoid()
@@ -119,7 +119,7 @@ class Deep(nn.Module):
             DenseBlock(56, 56, nn.Tanh(), p),
             DenseBlock(56, 56, nn.Tanh(), p),
             DenseBlock(56, 56, nn.Tanh(), p),
-            DenseBlock(56, 56, nn.Tanh(), 0.0),
+            DenseBlock(56, 56, nn.Tanh(), p),
             nn.Linear(56, 1),
             nn.Sigmoid()
         )
@@ -162,9 +162,9 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 model.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=0, threshold=0.0001, cooldown=0, min_lr=0.0005, eps=1e-08)
+    optimizer, mode='min', factor=0.2, patience=0, threshold=0.0001, cooldown=0, min_lr=0.0001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 
 # %%
@@ -201,9 +201,10 @@ def train_loop(data, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if train_step % 3000 == 0:
+        if train_step % 10000 == 0:
             loss = loss.item()
             print(f"loss: {loss:4f}")
+            print(f'Auc: {aucs[-1]:4f}')
             
     return losses, aucs
             
@@ -239,12 +240,13 @@ def valid_loop(data, model, loss_fn):
         auc = roc_auc_score(val_labels, val_preds)
 
     print(f"Validation average loss: {avg_loss:4f}\n")
+    print(f'Validation auc: {auc:4f}')
     
     return avg_loss, auc
 
 # %%
 
-epochs = 10
+epochs = 20
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
