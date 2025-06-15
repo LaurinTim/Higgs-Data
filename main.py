@@ -246,7 +246,7 @@ def valid_loop(data, model, loss_fn):
 
 # %%
 
-epochs = 20
+epochs = 80
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
@@ -261,6 +261,7 @@ for t in range(epochs):
 print("Done!")
 
 # %%
+epochs = 100
 
 x_train = np.linspace(0, epochs-1, len(train_history))
 x_valid = np.linspace(0, epochs-1, epochs)
