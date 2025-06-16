@@ -3,6 +3,8 @@ import os, sys
 from pathlib import Path
 import torch
 
+data_dir = str(Path(__file__).resolve().parent)
+
 # %%
 
 def make_decoder(feature_description):
@@ -62,7 +64,18 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         torch.save(model.state_dict(), self.path)
-
+        
+def count_data(files):
+    feature_description = {
+        'features': tf.io.FixedLenFeature([], tf.string),
+        'label': tf.io.FixedLenFeature([], tf.float32),
+    }
+    decoder = make_decoder(feature_description)
+    batch_size = 2 ** 11
+    ds = load_dataset(files, decoder, ordered=False).cache()
+    n = sum(1 for _ in ds)   # ~0.5 s per million examples
+    
+    return n
 
 
 
