@@ -2,6 +2,7 @@ import tensorflow as tf, numpy as np, pandas as pd
 import os, sys
 from pathlib import Path
 import torch
+from torch import nn
 
 data_dir = str(Path(__file__).resolve().parent)
 
@@ -91,6 +92,19 @@ def count_samples(files):
     
     return n
 
+class DenseBlock(nn.Module):
+    def __init__(self, input_size, output_size, activation, dropout_rate=0.1):
+        super().__init__()
+        self.stack = nn.Sequential(
+            nn.Linear(input_size, output_size),
+            nn.BatchNorm1d(num_features=output_size),
+            activation,
+            nn.Dropout(p=dropout_rate)
+        )
+        
+    def forward(self, x):
+        logits = self.stack(x)
+        return logits
 
 
 
