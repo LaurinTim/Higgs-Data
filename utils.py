@@ -65,7 +65,22 @@ class EarlyStopping:
         '''Saves model when validation loss decrease.'''
         torch.save(model.state_dict(), self.path)
         
-def count_data(files):
+def count_samples(files):
+    '''
+    Get the number of samples in files.
+
+    Parameters
+    ----------
+    files : list
+        List containing the paths to the files in which the samples should 
+        be counted.
+
+    Returns
+    -------
+    n : int
+        Number of samples found in the files.
+
+    '''
     feature_description = {
         'features': tf.io.FixedLenFeature([], tf.string),
         'label': tf.io.FixedLenFeature([], tf.float32),
