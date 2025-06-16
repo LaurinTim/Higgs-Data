@@ -71,7 +71,6 @@ def count_data(files):
         'label': tf.io.FixedLenFeature([], tf.float32),
     }
     decoder = make_decoder(feature_description)
-    batch_size = 2 ** 11
     ds = load_dataset(files, decoder, ordered=False).cache()
     n = sum(1 for _ in ds)   # ~0.5 s per million examples
     
