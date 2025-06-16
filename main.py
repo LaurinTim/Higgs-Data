@@ -105,8 +105,39 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         logits = self.linear_stack(x)
         return logits
+    
+class NeuralNetworkBig(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            DenseBlock(28, 112, nn.Tanh(), 0.1),
+            DenseBlock(112, 112, nn.Tanh(), 0.1),
+            DenseBlock(112, 112, nn.Tanh(), 0.1),
+            DenseBlock(112, 112, nn.Tanh(), 0.1),
+            DenseBlock(112, 112, nn.Tanh(), 0.0),
+            DenseBlock(112, 112, nn.Tanh(), 0.0),
+            nn.Linear(112, 1),
+            nn.Sigmoid()
+        )
 
-model = NeuralNetwork()
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class NeuralNetworkWide(nn.Module):
+    def __init__(self, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            DenseBlock(28, 2**11, nn.Tanh(), p),
+            nn.Linear(2**11, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+
+model = NeuralNetworkWide(p=0.1)
 
 # %%
 
@@ -166,6 +197,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.2, patience=0, threshold=0.0001, cooldown=0, min_lr=0.0001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
+early_stopping = u.EarlyStopping(patience=2, min_delta=0.001, path='best_model.pth')
 
 # %%
 
@@ -238,15 +270,15 @@ def valid_loop(data, model, loss_fn):
             
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
-
-    print(f"Validation average loss: {avg_loss:4f}\n")
-    print(f'Validation auc: {auc:4f}')
+        
+    print(f"Validation average loss: {avg_loss:4f}")
+    print(f'Validation auc: {auc:4f}\n')
     
     return avg_loss, auc
 
 # %%
 
-epochs = 80
+epochs = 10
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
@@ -257,11 +289,14 @@ for t in range(epochs):
     valid_history.append(valid_loss)
     train_history_auc.extend(train_aucs)
     valid_history_auc.append(valid_auc)
+    early_stopping(valid_loss, model)
+    if early_stopping.early_stop:
+        print('Early stopping triggered')
+        break
     lr_scheduler.step(valid_history[-1])
 print("Done!")
 
 # %%
-epochs = 100
 
 x_train = np.linspace(0, epochs-1, len(train_history))
 x_valid = np.linspace(0, epochs-1, epochs)
