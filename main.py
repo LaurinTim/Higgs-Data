@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-import torch
+import torch, copy
 from torch import nn
 import os, sys
 from pathlib import Path
@@ -295,6 +295,11 @@ for t in range(epochs):
         break
     lr_scheduler.step(valid_history[-1])
 print("Done!")
+
+# %%
+
+best_model = copy.deepcopy(model)
+best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_model.pth'))
 
 # %%
 
