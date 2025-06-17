@@ -69,7 +69,7 @@ arr_valid = next(iter(ds_valid_np))
 
 # %%
 
-modelRFC = RandomForestClassifier(n_estimators=10, criterion='gini', max_depth=None,
+modelRFC = RandomForestClassifier(n_estimators=300, criterion='gini', max_depth=None,
                                   min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
                                   min_weight_fraction_leaf=0.0001,
                                   max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=0)
