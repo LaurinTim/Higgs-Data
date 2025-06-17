@@ -7,6 +7,8 @@ import importlib.util
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 import time
+import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
@@ -77,6 +79,28 @@ ds_valid = (
     .prefetch(AUTO)
 )
 ds_valid_np = ds_valid.as_numpy_iterator()
+
+# %%
+
+ds_train = u.load_dataset(train_files, decoder, ordered=False)
+ds_train = (
+    ds_train
+    .cache()
+    .batch(training_size)
+    .prefetch(AUTO)
+)
+ds_train_np = ds_train.as_numpy_iterator()
+arr_train = next(iter(ds_train_np))
+
+ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid = (
+    ds_valid
+    .cache()
+    .batch(validation_size)
+    .prefetch(AUTO)
+)
+ds_valid_np = ds_valid.as_numpy_iterator()
+arr_valid = next(iter(ds_valid_np))
 
 # %%
     
@@ -174,7 +198,7 @@ class DeepWide(nn.Module):
         logits = torch.sigmoid(logits)
         return logits
 
-deep = Deep(units=2**8, p=0.1)
+deep = Deep(units=2**11, p=0.1)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -184,7 +208,7 @@ model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.0001, eps=1e-08)
+    optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.00001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model.pth')
 
@@ -222,10 +246,13 @@ def train_loop(data, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if train_step % 10000 == 0:
+        if train_step % 10000 == -1:
             loss = loss.item()
             print(f"loss: {loss:.5f}")
             print(f'Auc: {aucs[-1]:.5f}')
+            
+    print(f'Training average loss: {sum(losses)/len(losses):.5f}')
+    print(f'Training average auc: {sum(aucs)/len(aucs):.5f}')
             
     return losses, aucs
             
@@ -267,7 +294,7 @@ def valid_loop(data, model, loss_fn):
 
 # %%
 
-epochs = 10
+epochs = 100
 total_start = time.time()
 
 for t in range(epochs):
