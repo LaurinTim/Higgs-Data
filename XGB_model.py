@@ -18,6 +18,7 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 SEED = 0
 np.random.seed(SEED)
+tf.random.set_seed(SEED)
 
 # %%
 
@@ -27,8 +28,8 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
@@ -56,7 +57,7 @@ ds_train = (
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid = u.load_dataset(valid_files, decoder, ordered=True)
 ds_valid = (
     ds_valid
     .cache()
@@ -68,7 +69,7 @@ arr_valid = next(iter(ds_valid_np))
 
 # %%
 
-modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=42, 
+modelXGB = xgb.XGBClassifier(n_estimators=30, max_depth=6, max_leaves=42, 
                              objective='binary:logistic', n_jobs=-1)
 modelXGB.fit(arr_train[0], arr_train[1])
 
@@ -83,7 +84,11 @@ print(f'Train score: {score_train:.4f}')
 
 # %%
 
+pred_df = pd.DataFrame(pred, columns=['pred'])
 
+# %%
+
+pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv')
 
 
 

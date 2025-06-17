@@ -18,6 +18,7 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 SEED = 0
 np.random.seed(SEED)
+tf.random.set_seed(SEED)
 
 # %%
 
@@ -56,7 +57,7 @@ ds_train = (
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid = u.load_dataset(valid_files, decoder, ordered=True)
 ds_valid = (
     ds_valid
     .cache()
@@ -68,11 +69,14 @@ arr_valid = next(iter(ds_valid_np))
 
 # %%
 
-modelRFC = RandomForestClassifier(n_estimators=1000, criterion='gini', max_depth=None,
+modelRFC = RandomForestClassifier(n_estimators=10, criterion='gini', max_depth=None,
                                   min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
                                   min_weight_fraction_leaf=0.0001,
                                   max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=0)
 modelRFC.fit(arr_train[0], arr_train[1])
+print('Fitting RSF model done')
+
+# %%
 
 pred = modelRFC.predict(arr_valid[0])
 score = roc_auc_score(arr_valid[1], pred)
@@ -85,7 +89,11 @@ print(f'Train score: {score_train:.4f}')
 
 # %%
 
+pred_df = pd.DataFrame(pred, columns=['pred'])
 
+# %%
+
+pred_df.to_csv(data_dir + '\\predictions\\RFC_prediction.csv')
 
 
 

@@ -64,7 +64,7 @@ ds_train = (
     ds_train
     .cache()
     .repeat()
-    .shuffle(2 ** 19)
+    .shuffle(2 ** 19, seed=SEED)
     .batch(batch_size)
     .prefetch(AUTO)
 )
@@ -79,6 +79,16 @@ ds_valid = (
     .prefetch(AUTO)
 )
 ds_valid_np = ds_valid.as_numpy_iterator()
+
+ds_valid_all = u.load_dataset(valid_files, decoder, ordered=True)
+ds_valid_all = (
+    ds_valid_all
+    .cache()
+    .repeat()
+    .batch(validation_size)
+    .prefetch(AUTO)
+)
+ds_valid_all_np = ds_valid_all.as_numpy_iterator()
 
 # %%
 
@@ -124,7 +134,7 @@ class DeepWide(nn.Module):
         logits = torch.sigmoid(logits)
         return logits
 
-deep = Deep(units=2**11, p=0.1)
+deep = Deep(units=2**3, p=0.1)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -182,7 +192,7 @@ def train_loop(data, model, loss_fn, optimizer):
             
     return losses, aucs
             
-def valid_loop(data, model, loss_fn, ret=False):    
+def valid_loop(data, model, loss_fn):    
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -213,17 +223,51 @@ def valid_loop(data, model, loss_fn, ret=False):
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
         
-    if ret:
-        return val_labels, val_preds
-        
     print(f"Validation average loss: {avg_loss:.5f}")
     print(f'Validation auc: {auc:.5f}')
     
     return avg_loss, auc
 
+def valid_prediction(data, model, loss_fn):
+    # Set the model to evaluation mode - important for batch normalization and dropout layers
+    # Unnecessary in this situation but added for best practices
+    model.eval()
+    sum_loss = 0
+    sum_count = 0
+    val_labels = []
+    val_preds = []
+    
+    # Evaluating the model with torch.no_grad() ensures that no gradients are computed during test mode
+    # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
+    with torch.no_grad():
+        features, labels = next(iter(data))
+        
+        features = torch.from_numpy(copy.copy(features)).to(device)
+        labels = torch.from_numpy(copy.copy(labels)).to(device)
+        
+        outputs = model(features)
+        outputs = torch.squeeze(outputs)
+        loss = loss_fn(outputs, labels).item()
+        sum_loss += loss
+        sum_count += 1
+        
+        val_labels.extend(labels.detach().cpu().numpy())
+        val_preds.extend(outputs.detach().cpu().numpy())
+            
+        avg_loss = sum_loss / max(sum_count, 1)
+        auc = roc_auc_score(val_labels, val_preds)
+        
+    print(f"Validation average loss: {avg_loss:.5f}")
+    print(f'Validation auc: {auc:.5f}')
+    
+    #val_labels = val_labels[:validation_size]
+    #val_preds = val_preds[:validation_size]
+    
+    return val_labels, val_preds
+
 # %%
 
-epochs = 10
+epochs = 5
 total_start = time.time()
 
 for t in range(epochs):
@@ -254,6 +298,11 @@ print(f"Done! Total elapsed time is {total_duration:.2f}s.")
 
 # %%
 
+best_model = copy.deepcopy(model)
+best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_model.pth'))
+
+# %%
+
 train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
 valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_history', 'auc_history']).T
 
@@ -264,7 +313,12 @@ valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
 
 # %%
 
+val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
+#pred_df = pd.DataFrame([val_labels, val_pred], index=['labels','pred']).T
 
+# %%
+
+#pred_df.to_csv(data_dir + '\\predictions\\RSF_prediction.csv')
 
 
 
