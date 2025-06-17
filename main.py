@@ -82,77 +82,47 @@ ds_valid_np = ds_valid.as_numpy_iterator()
 
 # %%
 
-ds_train = u.load_dataset(train_files, decoder, ordered=False)
-ds_train = (
-    ds_train
+ds_train_all = u.load_dataset(train_files, decoder, ordered=False)
+ds_train_all = (
+    ds_train_all
     .cache()
     .batch(training_size)
     .prefetch(AUTO)
 )
-ds_train_np = ds_train.as_numpy_iterator()
-arr_train = next(iter(ds_train_np))
+arr_train = next(iter(ds_train_all.as_numpy_iterator()))
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
-ds_valid = (
-    ds_valid
+ds_valid_all = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid_all = (
+    ds_valid_all
     .cache()
     .batch(validation_size)
     .prefetch(AUTO)
 )
-ds_valid_np = ds_valid.as_numpy_iterator()
-arr_valid = next(iter(ds_valid_np))
+arr_valid = next(iter(ds_valid_all.as_numpy_iterator()))
 
 # %%
-    
-class NeuralNetwork(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.linear_stack = nn.Sequential(
-            u.DenseBlock(28, 56, nn.Tanh(), 0.1),
-            u.DenseBlock(56, 56, nn.Tanh(), 0.1),
-            u.DenseBlock(56, 56, nn.Tanh(), 0.1),
-            u.DenseBlock(56, 56, nn.Tanh(), 0.1),
-            u.DenseBlock(56, 56, nn.Tanh(), 0.0),
-            u.DenseBlock(56, 56, nn.Tanh(), 0.0),
-            nn.Linear(56, 1),
-            nn.Sigmoid()
-        )
 
-    def forward(self, x):
-        logits = self.linear_stack(x)
-        return logits
-    
-class NeuralNetworkBig(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.linear_stack = nn.Sequential(
-            u.DenseBlock(28, 112, nn.Tanh(), 0.1),
-            u.DenseBlock(112, 112, nn.Tanh(), 0.1),
-            u.DenseBlock(112, 112, nn.Tanh(), 0.1),
-            u.DenseBlock(112, 112, nn.Tanh(), 0.1),
-            u.DenseBlock(112, 112, nn.Tanh(), 0.0),
-            u.DenseBlock(112, 112, nn.Tanh(), 0.0),
-            nn.Linear(112, 1),
-            nn.Sigmoid()
-        )
+modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=42, 
+                             objective='binary:logistic', n_jobs=-1)
+modelXGB.fit(arr_train[0], arr_train[1])
 
-    def forward(self, x):
-        logits = self.linear_stack(x)
-        return logits
-    
-class NeuralNetworkWide(nn.Module):
-    def __init__(self, p=0.1):
-        super().__init__()
-        self.linear_stack = nn.Sequential(
-            nn.Linear(28, 1),
-            nn.Sigmoid()
-        )
+predXGB = modelXGB.predict(arr_valid[0])
+scoreXGB = roc_auc_score(arr_valid[1], predXGB)
 
-    def forward(self, x):
-        logits = self.linear_stack(x)
-        return logits
+print(f'XGB score: {scoreXGB:.4f}')
 
-model = NeuralNetworkWide(p=0.1)
+# %%
+
+modelRFC = RandomForestClassifier(n_estimators=300, criterion='gini', max_depth=None,
+                                  min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
+                                  min_weight_fraction_leaf=0.0001,
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=0)
+modelRFC.fit(arr_train[0], arr_train[1])
+
+predRSF = modelRFC.predict(arr_valid[0])
+scoreRSF = roc_auc_score(arr_valid[1], predRSF)
+
+print(f'RSF score: {scoreRSF:.4f}')
 
 # %%
 
@@ -256,7 +226,7 @@ def train_loop(data, model, loss_fn, optimizer):
             
     return losses, aucs
             
-def valid_loop(data, model, loss_fn):    
+def valid_loop(data, model, loss_fn, ret=False):    
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -286,6 +256,9 @@ def valid_loop(data, model, loss_fn):
             
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
+        
+    if ret:
+        return val_labels, val_preds
         
     print(f"Validation average loss: {avg_loss:.5f}")
     print(f'Validation auc: {auc:.5f}')
@@ -327,6 +300,15 @@ print(f"Done! Total elapsed time is {total_duration:.2f}s.")
 
 best_model = copy.deepcopy(model)
 best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_model.pth'))
+
+labels, predDL = valid_loop(ds_valid_np, best_model, loss_fn, ret=True)
+scoreDL = roc_auc_score(labels, predDL)
+
+# %%
+
+print(f'XGB score: {scoreXGB:.4f}')
+print(f'RSF score: {scoreRSF:.4f}')
+print(f'DL score: {scoreDL:.4f}')
 
 # %%
 
