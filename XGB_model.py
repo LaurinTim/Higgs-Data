@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 import time
 import xgboost as xgb
+import os
+
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
+
 import tensorflow as tf
 
 data_dir = str(Path(__file__).resolve().parent)
@@ -28,8 +33,8 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
@@ -89,6 +94,8 @@ pred_df = pd.DataFrame(pred, columns=['pred'])
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv')
+
+# %%
 
 
 
