@@ -69,7 +69,7 @@ arr_valid = next(iter(ds_valid_np))
 
 # %%
 
-modelXGB = xgb.XGBClassifier(n_estimators=30, max_depth=6, max_leaves=42, 
+modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=42, 
                              objective='binary:logistic', n_jobs=-1)
 modelXGB.fit(arr_train[0], arr_train[1])
 
