@@ -82,50 +82,6 @@ ds_valid_np = ds_valid.as_numpy_iterator()
 
 # %%
 
-ds_train_all = u.load_dataset(train_files, decoder, ordered=False)
-ds_train_all = (
-    ds_train_all
-    .cache()
-    .batch(training_size)
-    .prefetch(AUTO)
-)
-arr_train = next(iter(ds_train_all.as_numpy_iterator()))
-
-ds_valid_all = u.load_dataset(valid_files, decoder, ordered=False)
-ds_valid_all = (
-    ds_valid_all
-    .cache()
-    .batch(validation_size)
-    .prefetch(AUTO)
-)
-arr_valid = next(iter(ds_valid_all.as_numpy_iterator()))
-
-# %%
-
-modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=42, 
-                             objective='binary:logistic', n_jobs=-1)
-modelXGB.fit(arr_train[0], arr_train[1])
-
-predXGB = modelXGB.predict(arr_valid[0])
-scoreXGB = roc_auc_score(arr_valid[1], predXGB)
-
-print(f'XGB score: {scoreXGB:.4f}')
-
-# %%
-
-modelRFC = RandomForestClassifier(n_estimators=300, criterion='gini', max_depth=None,
-                                  min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
-                                  min_weight_fraction_leaf=0.0001,
-                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
-modelRFC.fit(arr_train[0], arr_train[1])
-
-predRSF = modelRFC.predict(arr_valid[0])
-scoreRSF = roc_auc_score(arr_valid[1], predRSF)
-
-print(f'RSF score: {scoreRSF:.4f}')
-
-# %%
-
 class Deep(nn.Module):
     def __init__(self, units=28, p=0.1):
         super().__init__()
@@ -267,7 +223,7 @@ def valid_loop(data, model, loss_fn, ret=False):
 
 # %%
 
-epochs = 100
+epochs = 10
 total_start = time.time()
 
 for t in range(epochs):
@@ -298,81 +254,18 @@ print(f"Done! Total elapsed time is {total_duration:.2f}s.")
 
 # %%
 
-best_model = copy.deepcopy(model)
-best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_model.pth'))
-
-labels, predDL = valid_loop(ds_valid_np, best_model, loss_fn, ret=True)
-scoreDL = roc_auc_score(labels, predDL)
+train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
+valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_history', 'auc_history']).T
 
 # %%
 
-print(f'XGB score: {scoreXGB:.4f}')
-print(f'RSF score: {scoreRSF:.4f}')
-print(f'DL score: {scoreDL:.4f}')
+train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
+valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
 
 # %%
 
-total_epochs = len(valid_history)
 
-x_train = np.linspace(0, total_epochs-1, len(train_history))
-x_valid = np.linspace(0, total_epochs-1, total_epochs)
 
-plt.figure(figsize=(15,8))
-
-plt.plot(x_train, train_history, c='k', label='Train loss')
-plt.plot(x_valid, valid_history, c='r', linestyle='--', label='Validation loss')
-
-plt.legend(loc='best')
-plt.show()
-
-# %%
-
-n = 300
-
-train_history_truncated = np.array(train_history[:(len(train_history) - (len(train_history) % n))]).reshape(-1, n).mean(axis=1)
-
-x_train = np.linspace(0, total_epochs-1, len(train_history_truncated))
-x_valid = np.linspace(0, total_epochs-1, total_epochs)
-
-plt.figure(figsize=(15,8))
-
-plt.plot(x_train, train_history_truncated, c='k', linewidth=2, label='Train loss')
-plt.plot(x_valid, valid_history, c='r', linewidth=2, linestyle='--', label='Validation loss')
-
-plt.legend(loc='best')
-plt.show()
-
-# %%
-
-x_train = np.linspace(0, total_epochs-1, len(train_history_auc))
-x_valid = np.linspace(0, total_epochs-1, total_epochs)
-
-plt.figure(figsize=(15,8))
-
-plt.plot(x_train, train_history_auc, c='k', label='Train auc')
-plt.plot(x_valid, valid_history_auc, c='r', linestyle='--', label='Validation auc')
-
-plt.legend(loc='best')
-plt.show()
-
-# %%
-
-n = 300
-
-train_history_auc_truncated = np.array(train_history_auc[:(len(train_history_auc) - (len(train_history_auc) % n))]).reshape(-1, n).mean(axis=1)
-
-x_train = np.linspace(0, total_epochs-1, len(train_history_auc_truncated))
-x_valid = np.linspace(0, total_epochs-1, total_epochs)
-
-plt.figure(figsize=(15,8))
-
-plt.plot(x_train, train_history_auc_truncated, c='k', linewidth=2, label='Train auc')
-plt.plot(x_valid, valid_history_auc, c='r', linewidth=2, linestyle='--', label='Validation auc')
-
-plt.legend(loc='best')
-plt.show()
-
-# %%
 
 
 

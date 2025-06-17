@@ -1,0 +1,173 @@
+import numpy as np, pandas as pd
+import os, sys
+from pathlib import Path
+import importlib.util
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score
+import time
+from sklearn.ensemble import RandomForestClassifier
+import tensorflow as tf
+
+data_dir = str(Path(__file__).resolve().parent)
+
+spec = importlib.util.spec_from_file_location("utils", data_dir + '\\utils.py')
+u = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(u)
+
+AUTO = tf.data.experimental.AUTOTUNE
+
+SEED = 0
+np.random.seed(SEED)
+
+# %%
+
+feature_description = {
+    'features': tf.io.FixedLenFeature([], tf.string),
+    'label': tf.io.FixedLenFeature([], tf.float32),
+}
+decoder = u.make_decoder(feature_description)
+
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
+
+# Count the number of samples in the train and validation datasets
+# This takes a long time, so this was run once and it is not manually defined below
+#training_size = u.count_samples(train_files)
+#validation_size = u.count_samples(valid_files)
+
+training_size = int(1.05e7)
+validation_size = int(5e5)
+BATCH_SIZE_PER_REPLICA = 2 ** 11
+batch_size = BATCH_SIZE_PER_REPLICA
+steps_per_epoch = training_size // batch_size
+validation_steps = validation_size // batch_size
+
+print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}")
+
+# %%
+
+ds_train = u.load_dataset(train_files, decoder, ordered=False)
+ds_train = (
+    ds_train
+    .cache()
+    .batch(training_size)
+    .prefetch(AUTO)
+)
+ds_train_np = ds_train.as_numpy_iterator()
+arr_train = next(iter(ds_train_np))
+
+ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid = (
+    ds_valid
+    .cache()
+    .batch(validation_size)
+    .prefetch(AUTO)
+)
+ds_valid_np = ds_valid.as_numpy_iterator()
+arr_valid = next(iter(ds_valid_np))
+
+# %%
+
+modelRFC = RandomForestClassifier(n_estimators=1000, criterion='gini', max_depth=None,
+                                  min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
+                                  min_weight_fraction_leaf=0.0001,
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=0)
+modelRFC.fit(arr_train[0], arr_train[1])
+
+pred = modelRFC.predict(arr_valid[0])
+score = roc_auc_score(arr_valid[1], pred)
+
+pred_train = modelRFC.predict(arr_train[0])
+score_train = roc_auc_score(arr_train[1], pred_train)
+
+print(f'Score: {score:.4f}')
+print(f'Train score: {score_train:.4f}')
+
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
