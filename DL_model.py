@@ -314,11 +314,11 @@ valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
 # %%
 
 val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
-#pred_df = pd.DataFrame([val_labels, val_pred], index=['labels','pred']).T
+pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
 # %%
 
-#pred_df.to_csv(data_dir + '\\predictions\\RSF_prediction.csv')
+pred_df.to_csv(data_dir + '\\predictions\\RSF_prediction.csv')
 
 
 
