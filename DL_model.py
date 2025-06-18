@@ -280,7 +280,7 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished with duration {duration:.2f}s  and learning rate {curr_lr:.5f}')
+    print(f'Epoch {t+1} finished with duration {duration:.2f}s and using learning rate {curr_lr:.5f}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
@@ -300,6 +300,10 @@ for t in range(epochs):
     
 total_duration = time.time() - total_start
 print(f"Done! Total elapsed time is {total_duration:.2f}s.")
+
+# %%
+
+u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=500)
 
 # %%
 
