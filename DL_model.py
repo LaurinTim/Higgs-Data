@@ -131,7 +131,6 @@ class DeepWide(nn.Module):
         deep_logits = self.deep(x)
         wide_logits = self.wide(x)
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
-        logits = torch.sigmoid(logits)
         return logits
 
 deep = Deep(units=2**11, p=0.15)
@@ -281,7 +280,7 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished with duration {duration:.2f}s  and learning rate {curr_lr:.4f}')
+    print(f'Epoch {t+1} finished with duration {duration:.2f}s  and learning rate {curr_lr:.5f}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
@@ -324,7 +323,7 @@ pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
 # %%
 
-pred_df.to_csv(data_dir + '\\predictions\\RSF_prediction.csv')
+pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv')
 
 # %%
 
