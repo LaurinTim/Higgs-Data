@@ -40,16 +40,16 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-training_size = int(1.05e7)
-validation_size = int(5e5)
+training_size = int(1.05e7 / 24)
+validation_size = int(5e5 / 8)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
 batch_size = BATCH_SIZE_PER_REPLICA
 steps_per_epoch = training_size // batch_size
@@ -120,11 +120,14 @@ class Wide(nn.Module):
         logits = self.linear_stack(x)
         return logits
     
+# %%
+    
 class DeepWide(nn.Module):
     def __init__(self, deep, wide, deep_ratio=0.5):
         super().__init__()
         self.deep = deep
         self.wide = wide
+        self.inputs = 0
         self.deep_ratio = deep_ratio
 
     def forward(self, x):
@@ -133,15 +136,37 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**11, p=0.15)
+deep = Deep(units=2**11, p=0.5)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
+class DeepWideAdaptive(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.linear_stack = nn.Sequential(
+            nn.Linear(2, 1),
+        )
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        input_logits = torch.cat((deep_logits, wide_logits), dim=1)
+        logits = self.linear_stack(input_logits)
+        return logits
+    
+deep = Deep(units=2**11, p=0.5)
+wide = Wide()
+model = DeepWideAdaptive(deep, wide)
+
+# %%
+
 model.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1, weight_decay=0.1)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.00001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
@@ -280,20 +305,21 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished with duration {duration:.2f}s and using learning rate {curr_lr:.5f}')
+    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.5f}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
     train_history_auc.extend(train_aucs)
-    valid_history_auc.append(valid_auc)
+    valid_history_auc.append(valid_auc) 
     early_stopping(valid_loss, model)
         
     if (t + 1) % 10 == 0:
-        u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=500)
+        u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop:
+    if early_stopping.early_stop and curr_lr <= 0.00002:
         print('Early stopping triggered')
         break
+    
     lr_scheduler.step(valid_history[-1])
         
     print()
@@ -312,22 +338,22 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 
 # %%
 
-train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
-valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_history', 'auc_history']).T
-
-# %%
-
-train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
-valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
-
-# %%
-
 val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
 # %%
 
-pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv')
+train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
+valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_history', 'auc_history']).T
+
+# %%
+
+#train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
+#valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
+
+# %%
+
+#pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv')
 
 # %%
 
