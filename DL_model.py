@@ -134,7 +134,7 @@ class DeepWide(nn.Module):
         logits = torch.sigmoid(logits)
         return logits
 
-deep = Deep(units=2**11, p=0.1)
+deep = Deep(units=2**11, p=0.15)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -267,7 +267,7 @@ def valid_prediction(data, model, loss_fn):
 
 # %%
 
-epochs = 5
+epochs = 100
 total_start = time.time()
 
 for t in range(epochs):
@@ -281,17 +281,23 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished with duration {duration:.2f}s  and learning rate {curr_lr:.4f} \n')
+    print(f'Epoch {t+1} finished with duration {duration:.2f}s  and learning rate {curr_lr:.4f}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
     train_history_auc.extend(train_aucs)
     valid_history_auc.append(valid_auc)
     early_stopping(valid_loss, model)
+        
+    if (t + 1) % 10 == 0:
+        u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=500)
+        
     if early_stopping.early_stop:
         print('Early stopping triggered')
         break
     lr_scheduler.step(valid_history[-1])
+        
+    print()
     
 total_duration = time.time() - total_start
 print(f"Done! Total elapsed time is {total_duration:.2f}s.")
@@ -319,6 +325,8 @@ pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\RSF_prediction.csv')
+
+# %%
 
 
 
