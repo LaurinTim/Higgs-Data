@@ -134,7 +134,7 @@ class DeepWide(nn.Module):
         logits = torch.sigmoid(logits)
         return logits
 
-deep = Deep(units=2**3, p=0.1)
+deep = Deep(units=2**11, p=0.1)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
