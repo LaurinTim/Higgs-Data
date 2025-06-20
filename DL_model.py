@@ -40,16 +40,18 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-training_size = int(1.05e7 / 24)
-validation_size = int(5e5 / 8)
+training_size = int(1.05e7/24)
+validation_size = int(5e5/8)
+training_size = int(1.05e7)
+validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
 batch_size = BATCH_SIZE_PER_REPLICA
 steps_per_epoch = training_size // batch_size
@@ -166,11 +168,11 @@ model = DeepWideAdaptive(deep, wide)
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=1, weight_decay=0.1)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.00001, eps=1e-08)
+    optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
-early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model.pth')
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
 # %%
 
@@ -316,7 +318,7 @@ for t in range(epochs):
     if (t + 1) % 10 == 0:
         u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop and curr_lr <= 0.00002:
+    if early_stopping.early_stop and curr_lr <= 0.000001:
         print('Early stopping triggered')
         break
     
