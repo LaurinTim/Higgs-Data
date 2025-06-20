@@ -48,8 +48,8 @@ valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-training_size = int(1.05e7/24)
-validation_size = int(5e5/8)
+#training_size = int(1.05e7/24)
+#validation_size = int(5e5/8)
 training_size = int(1.05e7)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
@@ -72,7 +72,7 @@ ds_train = (
 )
 ds_train_np = ds_train.as_numpy_iterator()
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=False)
+ds_valid = u.load_dataset(valid_files, decoder, ordered=True)
 ds_valid = (
     ds_valid
     .cache()
@@ -169,11 +169,12 @@ model = DeepWideAdaptive(deep, wide)
 model.to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
-lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
-#lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
+#lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
+lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
+
+lr_thresh = 0.01
 
 # %%
 
@@ -325,6 +326,10 @@ for t in range(epochs):
         break
     
     lr_scheduler.step(valid_history[-1])
+    
+    #if curr_lr >= 0.000001 and t > 10 and (valid_history[-10] - ((valid_history[-1] + valid_history[-2]) / 2)) <= lr_thresh:
+    #    lr_thresh /= 10
+    #    optimizer.param_groups['lr'] = max(optimizer.param_groups['lr'] * 0.2, 0.000001)
         
     print()
     
@@ -352,12 +357,12 @@ valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_histo
 
 # %%
 
-#train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
-#valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
+train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
+valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
 
 # %%
 
-#pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
+pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
 
 # %%
 
