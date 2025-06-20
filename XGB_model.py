@@ -93,7 +93,7 @@ pred_df = pd.DataFrame(pred, columns=['pred'])
 
 # %%
 
-pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv')
+pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv', index=False)
 
 # %%
 
