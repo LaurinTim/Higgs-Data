@@ -75,13 +75,15 @@ arr_valid = next(iter(ds_valid_np))
 # %%
 
 modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=42, 
-                             objective='binary:logistic', n_jobs=-1)
+                             objective='binary:logistic', n_jobs=-1, seed=42)
 modelXGB.fit(arr_train[0], arr_train[1])
 
-pred = modelXGB.predict(arr_valid[0])
+# %%
+
+pred = modelXGB.predict_proba(arr_valid[0])[:, 1]
 score = roc_auc_score(arr_valid[1], pred)
 
-pred_train = modelXGB.predict_proba(arr_train[0])
+pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
 print(f'Score: {score:.4f}')
