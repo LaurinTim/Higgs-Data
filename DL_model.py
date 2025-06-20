@@ -171,6 +171,7 @@ model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
+#lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
@@ -272,6 +273,7 @@ def valid_prediction(data, model, loss_fn):
         labels = torch.from_numpy(copy.copy(labels)).to(device)
         
         outputs = model(features)
+        #outputs = nn.Sigmoid(outputs)
         outputs = torch.squeeze(outputs)
         loss = loss_fn(outputs, labels).item()
         sum_loss += loss
@@ -283,7 +285,7 @@ def valid_prediction(data, model, loss_fn):
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
         
-    print(f"Validation average loss: {avg_loss:.5f}")
+    print(f"Validation average loss: {avg_loss:.6f}")
     print(f'Validation auc: {auc:.5f}')
     
     #val_labels = val_labels[:validation_size]
@@ -355,7 +357,7 @@ valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_histo
 
 # %%
 
-#pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv')
+#pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
 
 # %%
 
