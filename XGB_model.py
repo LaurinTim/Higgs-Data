@@ -81,7 +81,7 @@ modelXGB.fit(arr_train[0], arr_train[1])
 pred = modelXGB.predict(arr_valid[0])
 score = roc_auc_score(arr_valid[1], pred)
 
-pred_train = modelXGB.predict(arr_train[0])
+pred_train = modelXGB.predict_proba(arr_train[0])
 score_train = roc_auc_score(arr_train[1], pred_train)
 
 print(f'Score: {score:.4f}')

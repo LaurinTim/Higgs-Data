@@ -83,7 +83,7 @@ print('Fitting RSF model done')
 
 # %%
 
-pred = modelRFC.predict(arr_valid[0])
+pred = modelRFC.predict_proba(arr_valid[0])
 score = roc_auc_score(arr_valid[1], pred)
 
 #pred_train = modelRFC.predict(arr_train[0])
