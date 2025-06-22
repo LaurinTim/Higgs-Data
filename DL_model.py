@@ -38,7 +38,6 @@ feature_description = {
     'features': tf.io.FixedLenFeature([], tf.string),
     'label': tf.io.FixedLenFeature([], tf.float32),
 }
-decoder = u.make_decoder(feature_description)
 
 train_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\training' + '\\*.tfrecord')#[:2]
 valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfrecord')#[:2]
@@ -61,7 +60,7 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.make_ds_HIGGS(train_files, batch=batch_size, shuffle=False)
+ds_train = u.make_ds_HIGGS(train_files, batch=batch_size, shuffle=True)
 ds_train_np = ds_train.as_numpy_iterator()
 
 ds_valid = u.make_ds_HIGGS(valid_files, batch=batch_size, shuffle=False)
@@ -274,7 +273,7 @@ def valid_prediction(data, model, loss_fn):
 
 # %%
 
-epochs = 10
+epochs = 200
 total_start = time.time()
 
 for t in range(epochs):
