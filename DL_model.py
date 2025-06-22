@@ -40,16 +40,16 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\training' + '\\*.tfrecord')#[:2]
+valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfrecord')#[:2]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-#training_size = int(1.05e7/24)
-#validation_size = int(5e5/8)
+#training_size = int(1.05e7/21)
+#validation_size = int(5e5)
 training_size = int(1.05e7)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
@@ -61,35 +61,13 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.load_dataset(train_files, decoder, ordered=False)
-ds_train = (
-    ds_train
-    .cache()
-    .repeat()
-    .shuffle(2 ** 19, seed=SEED)
-    .batch(batch_size)
-    .prefetch(AUTO)
-)
+ds_train = u.make_ds_HIGGS(train_files, batch=batch_size, shuffle=False)
 ds_train_np = ds_train.as_numpy_iterator()
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=True)
-ds_valid = (
-    ds_valid
-    .cache()
-    .repeat()
-    .batch(batch_size)
-    .prefetch(AUTO)
-)
+ds_valid = u.make_ds_HIGGS(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
-ds_valid_all = u.load_dataset(valid_files, decoder, ordered=True)
-ds_valid_all = (
-    ds_valid_all
-    .cache()
-    .repeat()
-    .batch(validation_size)
-    .prefetch(AUTO)
-)
+ds_valid_all = u.make_ds_HIGGS(valid_files, batch=validation_size, shuffle=False)
 ds_valid_all_np = ds_valid_all.as_numpy_iterator()
 
 # %%
@@ -160,7 +138,7 @@ class DeepWideAdaptive(nn.Module):
         logits = self.linear_stack(input_logits)
         return logits
     
-deep = Deep(units=2**11, p=0.5)
+deep = Deep(units=2**11, p=0.3)
 wide = Wide()
 model = DeepWideAdaptive(deep, wide)
 
@@ -202,7 +180,7 @@ def train_loop(data, model, loss_fn, optimizer):
         optimizer.zero_grad()
         outputs = model(features)
         outputs = torch.squeeze(outputs)
-        loss = loss_fn(outputs, labels)
+        loss = loss_fn(outputs, labels.float())
         losses.append(loss.cpu().detach().numpy())
         aucs.append(roc_auc_score(labels.detach().cpu().numpy(), outputs.detach().cpu().numpy()))
 
@@ -217,10 +195,10 @@ def train_loop(data, model, loss_fn, optimizer):
             
     print(f'Training average loss: {sum(losses)/len(losses):.5f}')
     print(f'Training average auc: {sum(aucs)/len(aucs):.5f}')
-            
+        
     return losses, aucs
             
-def valid_loop(data, model, loss_fn):    
+def valid_loop(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -241,7 +219,7 @@ def valid_loop(data, model, loss_fn):
             
             outputs = model(features)
             outputs = torch.squeeze(outputs)
-            loss = loss_fn(outputs, labels).item()
+            loss = loss_fn(outputs, labels.float()).item()
             sum_loss += loss
             sum_count += 1
             
@@ -276,7 +254,7 @@ def valid_prediction(data, model, loss_fn):
         outputs = model(features)
         #outputs = nn.Sigmoid(outputs)
         outputs = torch.squeeze(outputs)
-        loss = loss_fn(outputs, labels).item()
+        loss = loss_fn(outputs, labels.float()).item()
         sum_loss += loss
         sum_count += 1
         
@@ -296,7 +274,7 @@ def valid_prediction(data, model, loss_fn):
 
 # %%
 
-epochs = 100
+epochs = 10
 total_start = time.time()
 
 for t in range(epochs):
@@ -334,7 +312,7 @@ for t in range(epochs):
     print()
     
 total_duration = time.time() - total_start
-print(f"Done! Total elapsed time is {total_duration:.2f}s.")
+print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 # %%
 
