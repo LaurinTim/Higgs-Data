@@ -4,32 +4,11 @@ from pathlib import Path
 import torch
 from torch import nn
 import matplotlib.pyplot as plt
+import json, glob
 
 data_dir = str(Path(__file__).resolve().parent)
 
 # %%
-
-def make_decoder(feature_description):
-    def decoder(example):
-        example = tf.io.parse_single_example(example, feature_description)
-        features = tf.io.parse_tensor(example['features'], tf.float32)
-        features = tf.reshape(features, [28])
-        label = example['label']
-        return features, label
-    return decoder
-
-def load_dataset(filenames, decoder, ordered=False):
-    AUTO = tf.data.experimental.AUTOTUNE
-    ignore_order = tf.data.Options()
-    if not ordered:
-        ignore_order.experimental_deterministic = False
-    dataset = (
-        tf.data
-        .TFRecordDataset(filenames, num_parallel_reads=AUTO)
-        .with_options(ignore_order)
-        .map(decoder, AUTO)
-    )
-    return dataset
 
 class EarlyStopping:
     """Stops training when a monitored metric has stopped improving."""
@@ -132,7 +111,23 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, n=300) -> N
     plt.legend(loc='best')
     plt.show()
     
+def get_feature_spec_HIGGS():
+    return {
+        "label": tf.io.FixedLenFeature([], tf.int64),
+        **{f"f{i}": tf.io.FixedLenFeature([], tf.float32) for i in range(28)}
+    }
 
+def parse_fn_HIGGS(ex_proto):
+    ex = tf.io.parse_single_example(ex_proto, get_feature_spec_HIGGS())
+    label = ex.pop("label")
+    features = tf.stack([ex[f"f{i}"] for i in range(28)], axis=0)
+    return features, label
+
+def make_ds_HIGGS(files, batch=2**11, shuffle=False):
+    #files = glob.glob(pattern)
+    ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
+    if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
+    return ds.map(parse_fn_HIGGS, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
 
 
