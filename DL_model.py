@@ -99,8 +99,6 @@ class Wide(nn.Module):
         logits = self.linear_stack(x)
         return logits
     
-# %%
-    
 class DeepWide(nn.Module):
     def __init__(self, deep, wide, deep_ratio=0.5):
         super().__init__()
@@ -121,38 +119,205 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
-class DeepWideAdaptive(nn.Module):
-    def __init__(self, deep, wide, deep_ratio=0.5):
+class ConvModel(nn.Module):
+    def __init__(self, p=0.3):
         super().__init__()
-        self.deep = deep
-        self.wide = wide
-        self.linear_stack = nn.Sequential(
-            nn.Linear(2, 1),
+        self.reorder = u.DenseBlock(28, 2**8, nn.ReLU(), p)
+        self.conv_stack = nn.Sequential(
+            nn.Conv1d(1, 8, 3, stride=1, padding='same'), # 8 x 256
+            nn.BatchNorm1d(8),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(2), # 8 x 128
+            nn.Conv1d(8, 32, 4, stride=2), # 32 x 63
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(3), # 32 x 21
+            nn.Conv1d(32, 128, 3, stride=1), # 128 x 19
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Linear(128*19, 1),
         )
 
     def forward(self, x):
-        deep_logits = self.deep(x)
-        wide_logits = self.wide(x)
-        input_logits = torch.cat((deep_logits, wide_logits), dim=1)
-        logits = self.linear_stack(input_logits)
+        features = self.reorder(x)
+        features = features.unsqueeze(1)
+        features = self.conv_stack(features)
+        logits = self.head(features)
         return logits
     
-deep = Deep(units=2**11, p=0.3)
-wide = Wide()
-model = DeepWideAdaptive(deep, wide)
+model = ConvModel(p=0.0)
+
+# %%
+
+class ConvModel(nn.Module):
+    def __init__(self, p=0.3):
+        super().__init__()
+        self.reorder = u.DenseBlock(28, 2**10, nn.ReLU(), p)
+        self.conv_stack = nn.Sequential(
+            nn.Conv1d(1, 8, 3, stride=1, padding='same'), # 8 x 1024
+            nn.BatchNorm1d(8),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(2), # 8 x 512
+            nn.Conv1d(8, 32, 4, stride=2), # 32 x 255
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(3), # 32 x 85
+            nn.Conv1d(32, 128, 3, stride=2), # 128 x 42
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Conv1d(128, 256, 4, stride=2), # 256 x 20
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Linear(256*20, 1),
+        )
+
+    def forward(self, x):
+        features = self.reorder(x)
+        features = features.unsqueeze(1)
+        features = self.conv_stack(features)
+        logits = self.head(features)
+        return logits
+    
+model = ConvModel(p=0.0)
+
+# %%
+
+class ConvModel(nn.Module):
+    def __init__(self, p=0.3):
+        super().__init__()
+        self.reorder = u.DenseBlock(28, 2**10, nn.ReLU(), p)
+        self.conv_stack = nn.Sequential(
+            nn.Conv1d(1, 8, 5, stride=1, padding='same'), # 8 x 1024
+            nn.BatchNorm1d(8),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.AvgPool1d(4), # 8 x 256
+            nn.Conv1d(8, 32, 4, stride=2), # 32 x 127
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(3), # 32 x 42
+            nn.Conv1d(32, 128, 3, stride=3), # 128 x 14
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Linear(128*14, 1),
+        )
+
+    def forward(self, x):
+        features = self.reorder(x)
+        features = features.unsqueeze(1)
+        features = self.conv_stack(features)
+        logits = self.head(features)
+        return logits
+    
+model = ConvModel(p=0.0)
+
+# %%
+
+class ConvModel(nn.Module):
+    def __init__(self, p=0.3):
+        super().__init__()
+        self.reorder = u.DenseBlock(28, 2**10, nn.ReLU(), p)
+        self.conv_stack = nn.Sequential(
+            nn.Conv1d(1, 8, 5, stride=1, padding='same'), # 8 x 1024
+            nn.BatchNorm1d(8),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.AvgPool1d(4), # 8 x 256
+            nn.Conv1d(8, 32, 4, stride=2), # 32 x 127
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(3), # 32 x 42
+            nn.Conv1d(32, 128, 3, stride=2), # 128 x 20
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Conv1d(128, 256, 3, stride=2), # 128 x 9
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Linear(256*9, 1),
+        )
+
+    def forward(self, x):
+        features = self.reorder(x)
+        features = features.unsqueeze(1)
+        features = self.conv_stack(features)
+        logits = self.head(features)
+        return logits
+    
+model = ConvModel(p=0.3)
+
+# %%
+
+class ConvModel(nn.Module):
+    def __init__(self, p=0.3):
+        super().__init__()
+        self.reorder = u.DenseBlock(28, 2**5, nn.ReLU(), p)
+        self.conv_stack = nn.Sequential(
+            nn.Conv1d(1, 8, 3, stride=1, padding='same'), # 8 x 32
+            nn.BatchNorm1d(8),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(2), # 8 x 16
+            nn.Conv1d(8, 32, 2, stride=1), # 32 x 15
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.MaxPool1d(3), # 32 x 5
+            nn.Conv1d(32, 128, 3, stride=1), # 128 x 3
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout1d(p=p),
+            nn.Flatten(),
+        )
+        self.head = nn.Sequential(
+            nn.Linear(128*3, 1),
+        )
+
+    def forward(self, x):
+        features = self.reorder(x)
+        features = features.unsqueeze(1)
+        features = self.conv_stack(features)
+        logits = self.head(features)
+        return logits
+    
+model = ConvModel(p=0.4)
 
 # %%
 
 model.to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
+#optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 60, 1e-6, -1)
+#lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-6, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model.pth')
 
-lr_thresh = 0.01
+lr_div = (1e-2 / 1e-6)**(1 / 30)
 
 # %%
 
@@ -288,7 +453,7 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.6f}')
+    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.8f}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
@@ -299,12 +464,14 @@ for t in range(epochs):
     if (t + 1) % 10 == 0:
         u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop and curr_lr <= 0.000001:
+    if early_stopping.early_stop and curr_lr <= 1e-5:
         print('Early stopping triggered')
         break
     
+    optimizer.param_groups[0]['lr'] /= lr_div
+    
     #lr_scheduler.step(valid_history[-1])
-    lr_scheduler.step()
+    #lr_scheduler.step()
     
     #if curr_lr >= 0.000001 and t > 10 and (valid_history[-10] - ((valid_history[-1] + valid_history[-2]) / 2)) <= lr_thresh:
     #    lr_thresh /= 10
