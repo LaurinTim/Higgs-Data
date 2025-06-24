@@ -571,7 +571,7 @@ print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 # %%
 
-u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=500)
+u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/4))
 
 # %%
 
