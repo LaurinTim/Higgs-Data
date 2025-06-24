@@ -47,8 +47,8 @@ valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfre
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-#training_size = int(1.05e7/21)
-#validation_size = int(5e5)
+training_size = int(1.05e7/21)
+validation_size = int(5e5)
 training_size = int(1.05e7)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
@@ -104,7 +104,6 @@ class DeepWide(nn.Module):
         super().__init__()
         self.deep = deep
         self.wide = wide
-        self.inputs = 0
         self.deep_ratio = deep_ratio
 
     def forward(self, x):
@@ -307,9 +306,93 @@ model = ConvModel(p=0.4)
 
 # %%
 
+class HIGGSConvNet(nn.Module):
+    """
+    A lightweight 1-D convolutional network for the HIGGS dataset
+    (28 numeric features → binary label).
+
+    Notes
+    -----
+    • 1-D convolutions view the feature vector as a length-28
+      sequence with one channel.
+    • BatchNorm + GELU + Dropout give good regularisation.
+    • Change `hidden_channels`, `kernel_size`, etc. to experiment.
+    """
+
+    def __init__(
+        self,
+        hidden_channels: int = 32, # C
+        kernel_size: int = 3,
+        fc_hidden: int = 64, # F
+        p: float = 0.25,
+    ):
+        super().__init__()
+
+        # 28 features → (B, 1, 28)
+        self.backbone = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=hidden_channels, kernel_size=kernel_size, padding="same"),
+            nn.BatchNorm1d(hidden_channels),
+            nn.GELU(),
+            nn.Conv1d(hidden_channels, hidden_channels, kernel_size=kernel_size, padding="same"),
+            nn.BatchNorm1d(hidden_channels),
+            nn.GELU(),
+            nn.AdaptiveAvgPool1d(1),      # (B, C, 1)
+            nn.Flatten(),                 # (B, C)
+            nn.Dropout(p),
+        )
+
+        self.head = nn.Sequential(
+            nn.Linear(hidden_channels, fc_hidden), # (B, F)
+            nn.GELU(),
+            nn.Dropout(p),
+            nn.Linear(fc_hidden, 1),      # binary output logit
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Parameters
+        ----------
+        x : torch.Tensor
+            Shape (batch, 28) -- already float32 and feature-scaled.
+
+        Returns
+        -------
+        torch.Tensor
+            Shape (batch,) – raw logits.  
+            Apply `torch.sigmoid` or use `BCEWithLogitsLoss` during training.
+        """
+        x = x.unsqueeze(1)        # (B, 1, 28)
+        features = self.backbone(x)
+        logits = self.head(features)
+        return logits
+    
+    
+class DeepWideConv(nn.Module):
+    def __init__(self, deep, wide, conv, deep_ratio=1/3, wide_ratio=1/3):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.conv = conv
+        self.deep_ratio = deep_ratio
+        self.wide_ratio = wide_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        conv_logits = self.conv(x)
+        logits = self.deep_ratio * deep_logits + self.wide_ratio * wide_logits + (1 - self.deep_ratio - self.wide_ratio) * conv_logits
+        return logits
+    
+deep = Deep(units=2**11, p=0.3)
+wide = Wide()
+conv = HIGGSConvNet(hidden_channels=32, kernel_size=3, fc_hidden=64, p=0.25)
+model = DeepWideConv(deep, wide, conv, deep_ratio=1/3, wide_ratio=1/3)
+
+# %%
+
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.0)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
@@ -443,6 +526,7 @@ epochs = 200
 total_start = time.time()
 
 for t in range(epochs):
+    
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
     #print(f'Current learning rate: {curr_lr}')
@@ -464,7 +548,7 @@ for t in range(epochs):
     if (t + 1) % 10 == 0:
         u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop and curr_lr <= 1e-5:
+    if early_stopping.early_stop and curr_lr <= 1e-7:
         print('Early stopping triggered')
         break
     
