@@ -385,14 +385,14 @@ class DeepWideConv(nn.Module):
     
 deep = Deep(units=2**11, p=0.3)
 wide = Wide()
-conv = HIGGSConvNet(hidden_channels=32, kernel_size=3, fc_hidden=64, p=0.25)
+conv = HIGGSConvNet(hidden_channels=32, kernel_size=3, fc_hidden=64, p=0.3)
 model = DeepWideConv(deep, wide, conv, deep_ratio=1/3, wide_ratio=1/3)
 
 # %%
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.0)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
@@ -571,7 +571,7 @@ print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 # %%
 
-u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=1)
+u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=500)
 
 # %%
 
