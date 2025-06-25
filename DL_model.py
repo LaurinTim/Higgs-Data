@@ -399,7 +399,7 @@ class Deep(nn.Module):
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.Tanh(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
             nn.Linear(units, 1)
         )
 
