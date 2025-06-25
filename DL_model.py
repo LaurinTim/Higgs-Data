@@ -390,9 +390,56 @@ model = DeepWideConv(deep, wide, conv, deep_ratio=1/3, wide_ratio=1/3)
 
 # %%
 
+class Deep(nn.Module):
+    def __init__(self, units=28, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(28, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(28, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**11, p=0.2)
+wide = Wide()
+model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %%
+
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
@@ -571,7 +618,7 @@ print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 # %%
 
-u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/4))
+u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/8))
 
 # %%
 
