@@ -398,7 +398,7 @@ class Deep(nn.Module):
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.Tanh(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.Tanh(), p),
             nn.Linear(units, 1)
         )
@@ -443,7 +443,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-6, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 20, 1e-8, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model.pth')
 
@@ -602,10 +602,10 @@ for t in range(epochs):
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if t < 30:
+    if t < 50:
         lr_scheduler.step()
-    else:
-        optimizer.param_groups[0]['lr'] /= 1.1
+    #else:
+    #    optimizer.param_groups[0]['lr'] /= 1.1
     
     #if curr_lr >= 0.000001 and t > 10 and (valid_history[-10] - ((valid_history[-1] + valid_history[-2]) / 2)) <= lr_thresh:
     #    lr_thresh /= 10
