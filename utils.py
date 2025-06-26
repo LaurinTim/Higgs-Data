@@ -66,7 +66,8 @@ def count_samples(files):
         'features': tf.io.FixedLenFeature([], tf.string),
         'label': tf.io.FixedLenFeature([], tf.float32),
     }
-    ds = make_ds_HIGGS(files, shuffle=False).cache()
+    #ds = make_ds_HIGGS(files, shuffle=False).cache()
+    ds = make_ds_SUSY(files, shuffle=False).cache()
     n = sum(1 for _ in ds)   # ~0.5 s per million examples
     
     return n
