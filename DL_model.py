@@ -445,9 +445,9 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50, 1e-8, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-10, -1)
 loss_fn = nn.BCEWithLogitsLoss()
-early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model.pth')
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
 lr_div = (1e-2 / 1e-6)**(1 / 30)
 
@@ -573,9 +573,10 @@ def valid_prediction(data, model, loss_fn):
 
 epochs = 200
 total_start = time.time()
-
+cont = True
+optimizer.param_groups[0]['lr'] = 1e-6
 for t in range(epochs):
-    
+    t += 107
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
     #print(f'Current learning rate: {curr_lr}')
@@ -597,15 +598,18 @@ for t in range(epochs):
     if (t + 1) % 10 == 0:
         u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop and curr_lr <= 1e-7:
+    if early_stopping.early_stop and curr_lr <= 1e-5 and t>=120:
         print('Early stopping triggered')
         break
     
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if t < 50:
+    if optimizer.param_groups[0]['lr'] >= 1e-8 and False:
         lr_scheduler.step()
+        
+    if optimizer.param_groups[0]['lr'] == 1e-10:
+        cont = False
     #else:
     #    optimizer.param_groups[0]['lr'] /= 1.1
     
