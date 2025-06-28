@@ -62,8 +62,7 @@ def count_samples(files):
         Number of samples found in the files.
 
     '''
-    ds = make_ds_HIGGS(files, shuffle=False).cache()
-    #ds = make_ds_SUSY(files, shuffle=False).cache()
+    ds = make_ds(files, shuffle=False).cache()
     n = sum(1 for _ in ds)   # ~0.5 s per million examples
     
     return n
@@ -107,41 +106,24 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, n=300) -> N
     plt.legend(loc='best')
     plt.show()
     
-def get_feature_spec_HIGGS():
+def get_feature_spec():
     return {
         "label": tf.io.FixedLenFeature([], tf.int64),
         **{f"f{i}": tf.io.FixedLenFeature([], tf.float32) for i in range(28)}
     }
 
-def parse_fn_HIGGS(ex_proto):
-    ex = tf.io.parse_single_example(ex_proto, get_feature_spec_HIGGS())
+def parse_fn(ex_proto):
+    ex = tf.io.parse_single_example(ex_proto, get_feature_spec())
     label = ex.pop("label")
     features = tf.stack([ex[f"f{i}"] for i in range(28)], axis=0)
     return features, label
 
-def make_ds_HIGGS(files, batch=2**11, shuffle=False):
+def make_ds(files, batch=2**11, shuffle=False):
     #files = glob.glob(pattern)
     ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
     if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
-    return ds.map(parse_fn_HIGGS, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
+    return ds.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
-def get_feature_spec_SUSY():
-    return {
-        "label": tf.io.FixedLenFeature([], tf.int64),
-        **{f"f{i}": tf.io.FixedLenFeature([], tf.float32) for i in range(18)}
-    }
-
-def parse_fn_SUSY(ex_proto):
-    ex = tf.io.parse_single_example(ex_proto, get_feature_spec_SUSY())
-    label = ex.pop("label")
-    features = tf.stack([ex[f"f{i}"] for i in range(18)], axis=0)
-    return features, label
-
-def make_ds_SUSY(files, batch=2**11, shuffle=False):
-    #files = glob.glob(pattern)
-    ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
-    if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
-    return ds.map(parse_fn_SUSY, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
 
 
