@@ -114,7 +114,62 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**11, p=0.2)
+deep = Deep(units=2**8, p=0.2)
+wide = Wide()
+model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %%
+
+class Deep(nn.Module):
+    def __init__(self, units=18, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(18, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(18, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**8, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -122,7 +177,7 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.01)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
