@@ -305,6 +305,29 @@ print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/16))
 
+# %%
+
+best_model = copy.deepcopy(model)
+best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_model.pth'))
+
+# %%
+
+val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
+pred_df = pd.DataFrame(val_pred, columns=['pred']).T
+
+# %%
+
+train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
+valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_history', 'auc_history']).T
+
+# %%
+
+train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
+valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
+
+# %%
+
+pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
 
 # %%
 
