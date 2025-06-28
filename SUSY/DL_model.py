@@ -62,10 +62,10 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.make_ds_SUSY(train_files, batch=batch_size, shuffle=True)
+ds_train = u.make_ds(train_files, batch=batch_size, shuffle=True)
 ds_train_np = ds_train.as_numpy_iterator()
 
-ds_valid = u.make_ds_SUSY(valid_files, batch=batch_size, shuffle=False)
+ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
 ds_valid_all = u.make_ds_SUSY(valid_files, batch=validation_size, shuffle=False)

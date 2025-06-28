@@ -52,23 +52,11 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.load_dataset(train_files, decoder, ordered=False)
-ds_train = (
-    ds_train
-    .cache()
-    .batch(training_size)
-    .prefetch(AUTO)
-)
+ds_train = u.make_ds(train_files, batch=training_size, shuffle=True)
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
-ds_valid = u.load_dataset(valid_files, decoder, ordered=True)
-ds_valid = (
-    ds_valid
-    .cache()
-    .batch(validation_size)
-    .prefetch(AUTO)
-)
+ds_valid = u.make_ds(valid_files, batch=validation_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 arr_valid = next(iter(ds_valid_np))
 
