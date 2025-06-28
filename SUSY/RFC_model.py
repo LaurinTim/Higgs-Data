@@ -30,15 +30,17 @@ feature_description = {
 }
 decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:2]
+valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:2]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-training_size = int(1.05e7)
+#training_size = int(4.5e6/21)
+#validation_size = int(5e5)
+training_size = int(4.5e6)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
 batch_size = BATCH_SIZE_PER_REPLICA
