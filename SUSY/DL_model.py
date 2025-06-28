@@ -47,10 +47,8 @@ valid_files = tf.io.gfile.glob(data_dir + '\\SUSY data\\validation' + '\\*.tfrec
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-# %%
-
-training_size = int(4.5e6/21)
-validation_size = int(5e5)
+#training_size = int(4.5e6/21)
+#validation_size = int(5e5)
 training_size = int(4.5e6)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
@@ -68,7 +66,7 @@ ds_train_np = ds_train.as_numpy_iterator()
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
-ds_valid_all = u.make_ds_SUSY(valid_files, batch=validation_size, shuffle=False)
+ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
 ds_valid_all_np = ds_valid_all.as_numpy_iterator()
 
 # %%
@@ -124,15 +122,13 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.0)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-5, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50, 1e-7, -1)
 loss_fn = nn.BCEWithLogitsLoss()
-early_stopping = u.EarlyStopping(patience=5, min_delta=0.000, path='best_model_SUSY.pth')
-
-lr_div = (1e-2 / 1e-6)**(1 / 30)
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model_SUSY.pth')
 
 # %%
 
@@ -254,7 +250,7 @@ def valid_prediction(data, model, loss_fn):
 
 # %%
 
-epochs = 200
+epochs = 100
 total_start = time.time()
 
 for t in range(epochs):
@@ -287,7 +283,7 @@ for t in range(epochs):
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if t < 30:
+    if t < 50:
         lr_scheduler.step()
     #else:
     #    optimizer.param_groups[0]['lr'] /= 1.1
