@@ -17,7 +17,7 @@ import tensorflow as tf
 
 data_dir = str(Path(__file__).resolve().parent)
 
-spec = importlib.util.spec_from_file_location("utils", data_dir + '\\utils.py')
+spec = importlib.util.spec_from_file_location("utils", data_dir + '\\HIGGS_utils.py')
 u = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(u)
 
