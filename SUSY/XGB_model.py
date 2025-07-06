@@ -69,8 +69,10 @@ modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=7, max_leaves=100,
                              objective='binary:logistic', n_jobs=-1, seed=42)
 
 modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
-                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6,
+                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
+                             max_delta_step=1.8,
                              objective='binary:logistic', n_jobs=-1, seed=42)
+
 modelXGB.fit(arr_train[0], arr_train[1])
 
 pred = modelXGB.predict_proba(arr_valid[0])[:, 1]
@@ -87,6 +89,7 @@ print(f'Train score: {score_train:.5f}')
 # 0.87709
 modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
                              max_bin=256, eta=0.3, gamma=0, min_child_weight=1,
+                             max_delta_step=0, 
                              objective='binary:logistic', n_jobs=-1, seed=42)
 
 # 0.87714
@@ -97,28 +100,65 @@ modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None,
 # 0.87718
 modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
                              max_bin=256, eta=0.239, gamma=0.83, min_child_weight=1,
+                             max_delta_step=0, 
                              objective='binary:logistic', n_jobs=-1, seed=42)
 
 # 0.87719
 modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
                              max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
-                             max_delta_step=0,
+                             max_delta_step=0, 
                              objective='binary:logistic', n_jobs=-1, seed=42)
+
+# 0.87725
+modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
+                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
+                             max_delta_step=1.8,
+                             objective='binary:logistic', n_jobs=-1, seed=42)
+
+# 0.87768
+modelXGB = xgb.XGBClassifier(n_estimators=100, max_depth=8, max_leaves=None, 
+                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
+                             max_delta_step=1.8,
+                             objective='binary:logistic', n_jobs=-1, seed=42)
+
+# Increasing max_bin might help
 
 # %%
 
-best = 0.87719
+modelXGB = xgb.XGBClassifier(n_estimators=100, max_depth=8, max_leaves=None, 
+                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
+                             max_delta_step=1.8,
+                             objective='binary:logistic', n_jobs=-1, seed=42)
+
+modelXGB.fit(arr_train[0], arr_train[1])
+
+pred = modelXGB.predict_proba(arr_valid[0])[:, 1]
+score = roc_auc_score(arr_valid[1], pred)
+
+pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
+score_train = roc_auc_score(arr_train[1], pred_train)
+
+print(f'Score: {score:.5f}')
+print(f'Train score: {score_train:.5f}')
+
+
+# %%
+
+best = 0.87768
 best_val = None
 found_new_best = False
-new_best_score = None
+new_best_score = 0
 
-for val in range(21):
-    val = 0.1*val
+for val in range(6):
+    val = 6+2*val
         
-    modelXGB = xgb.XGBClassifier(n_estimators=50, max_depth=8, max_leaves=None, 
+    modelXGB = xgb.XGBClassifier(n_estimators=100, max_depth=val, max_leaves=None, 
                                  max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
-                                 max_delta_step=val,
+                                 max_delta_step=1.8,
                                  objective='binary:logistic', n_jobs=-1, seed=42)
+    
+    
+    
     modelXGB.fit(arr_train[0], arr_train[1])
     
     pred = modelXGB.predict_proba(arr_valid[0])[:, 1]
@@ -127,7 +167,7 @@ for val in range(21):
     pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
     score_train = roc_auc_score(arr_train[1], pred_train)
     
-    new_best = round(score, 5)>best
+    new_best = round(score, 5)>best and round(score, 5)>new_best_score
     if new_best:
         best_val = val
         found_new_best = True
