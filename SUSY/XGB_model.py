@@ -28,10 +28,9 @@ feature_description = {
     'features': tf.io.FixedLenFeature([], tf.string),
     'label': tf.io.FixedLenFeature([], tf.float32),
 }
-decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:2]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:2]
+train_files = tf.io.gfile.glob(data_dir + '\\SUSY data\\training' + '\\*.tfrecord')#[:2]
+valid_files = tf.io.gfile.glob(data_dir + '\\SUSY data\\validation' + '\\*.tfrecord')#[:2]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
