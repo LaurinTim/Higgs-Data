@@ -128,11 +128,17 @@ modelRFC = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=
                                   max_features='sqrt', 
                                   max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
 
+# 0.87630, 0.80902
+modelRFC = RandomForestClassifier(n_estimators=400, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
 # %%
 
 best = 0.87515
 
-modelRFC = RandomForestClassifier(n_estimators=400, criterion='gini', max_depth=30,
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=30,
                                   min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
                                   max_features='sqrt', 
                                   max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
