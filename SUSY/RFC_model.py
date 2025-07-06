@@ -60,7 +60,7 @@ arr_valid = next(iter(ds_valid_np))
 
 # %%
 
-modelRFC = RandomForestClassifier(n_estimators=300, criterion='gini', max_depth=None,
+modelRFC = RandomForestClassifier(n_estimators=50, criterion='gini', max_depth=None,
                                   min_samples_split=2, min_samples_leaf=2, max_features='sqrt',
                                   min_weight_fraction_leaf=0.0001,
                                   max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
@@ -78,6 +78,79 @@ score = roc_auc_score(arr_valid[1], pred)
 print(f'Score: {score:.4f}')
 #print(f'Train score: {score_train:.4f}')
 
+# %%
+
+# 0.87404
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=0.0001, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87405
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=29,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=0.0001, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87463, 0.82017
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=29,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87498, 0.80868
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=29,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87511, 0.80818
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=29,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87515, 0.80821
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87610, 0.80883
+modelRFC = RandomForestClassifier(n_estimators=100, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# 0.87624, 0.80898
+modelRFC = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+
+# %%
+
+best = 0.87515
+
+modelRFC = RandomForestClassifier(n_estimators=20, criterion='gini', max_depth=30,
+                                  min_samples_split=200, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+modelRFC.fit(arr_train[0], arr_train[1])
+
+pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
+score = roc_auc_score(arr_valid[1], pred)
+
+pred_train = modelRFC.predict(arr_train[0])
+score_train = roc_auc_score(arr_train[1], pred_train)
+
+print()
+print(f'Score: {score:.5f}')
+print(f'Train score: {score_train:.5f}')
+
+if round(score, 5)>best:
+    print('New best prediction!!!')
+    
 # %%
 
 pred_df = pd.DataFrame(pred, columns=['pred'])
