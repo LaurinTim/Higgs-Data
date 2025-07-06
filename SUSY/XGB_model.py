@@ -10,9 +10,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 import tensorflow as tf
 
-data_dir = str(Path(__file__).resolve().parent.parent)
+data_dir = str(Path(__file__).resolve().parent)
 
-spec = importlib.util.spec_from_file_location("utils", data_dir + '\\utils.py')
+spec = importlib.util.spec_from_file_location("utils", data_dir + '\\SUSY_utils.py')
 u = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(u)
 
