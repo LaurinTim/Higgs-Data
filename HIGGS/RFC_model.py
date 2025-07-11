@@ -48,7 +48,7 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.make_ds(train_files, batch=training_size, shuffle=True)
+ds_train = u.make_ds(train_files, batch=training_size, shuffle=False)
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
@@ -70,24 +70,28 @@ print('Fitting RSF model done')
 pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
 score = roc_auc_score(arr_valid[1], pred)
 
-#pred_train = modelRFC.predict(arr_train[0])
-#score_train = roc_auc_score(arr_train[1], pred_train)
+pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
+score_train = roc_auc_score(arr_train[1], pred_train)
 
-print(f'Score: {score:.4f}')
-#print(f'Train score: {score_train:.4f}')
+print(f'Score: {score:.5f}')
+print(f'Train score: {score_train:.5f}')
 
 # %%
 
-pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
+#pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
 pred_df = pd.DataFrame(pred, columns=['pred'])
 
-pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
+#pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
 pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
+pred_train_df1 = pred_train_df[:int(training_size/2)]
+pred_train_df2 = pred_train_df[int(training_size/2):]
+
 
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\RFC_prediction.csv', index=False)
-pred_train_df.to_csv(data_dir + '\\predictions\\RFC_prediction_train.csv', index=False)
+pred_train_df1.to_csv(data_dir + '\\predictions\\RFC_prediction_train_part1.csv', index=False)
+pred_train_df2.to_csv(data_dir + '\\predictions\\RFC_prediction_train_part2.csv', index=False)
 
 # %%
 
