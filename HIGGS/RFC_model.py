@@ -10,9 +10,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 import tensorflow as tf
 
-data_dir = str(Path(__file__).resolve().parent.parent)
+data_dir = str(Path(__file__).resolve().parent)
 
-spec = importlib.util.spec_from_file_location("utils", data_dir + '\\utils.py')
+spec = importlib.util.spec_from_file_location("utils", data_dir + '\\HIGGS_utils.py')
 u = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(u)
 
@@ -28,10 +28,9 @@ feature_description = {
     'features': tf.io.FixedLenFeature([], tf.string),
     'label': tf.io.FixedLenFeature([], tf.float32),
 }
-decoder = u.make_decoder(feature_description)
 
-train_files = tf.io.gfile.glob(data_dir + '\\training' + '\\*.tfrecord')#[:1]
-valid_files = tf.io.gfile.glob(data_dir + '\\validation' + '\\*.tfrecord')#[:1]
+train_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\training' + '\\*.tfrecord')#[:1]
+valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfrecord')#[:1]
 
 # Count the number of samples in the train and validation datasets
 # This takes a long time, so this was run once and it is not manually defined below
