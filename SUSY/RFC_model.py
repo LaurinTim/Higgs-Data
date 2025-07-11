@@ -147,7 +147,7 @@ modelRFC.fit(arr_train[0], arr_train[1])
 pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
 score = roc_auc_score(arr_valid[1], pred)
 
-pred_train = modelRFC.predict(arr_train[0])
+pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
 print()
@@ -160,10 +160,12 @@ if round(score, 5)>best:
 # %%
 
 pred_df = pd.DataFrame(pred, columns=['pred'])
+pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
 
 # %%
 
-pred_df.to_csv(data_dir + '\\predictions\\RFC_prediction.csv', index=False)
+pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv', index=False)
+pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
 
 # %%
 
