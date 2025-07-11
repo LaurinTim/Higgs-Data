@@ -66,16 +66,76 @@ ds_train_np = ds_train.as_numpy_iterator()
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
+ds_train_all = u.make_ds(train_files, batch=training_size, shuffle=False)
+ds_train_all_np = ds_train_all.as_numpy_iterator()
+
 ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
 ds_valid_all_np = ds_valid_all.as_numpy_iterator()
 
 # %%
 
+# valid score: 0.87982, train score: 0.87838
 class Deep(nn.Module):
     def __init__(self, units=18, p=0.1):
         super().__init__()
         self.linear_stack = nn.Sequential(
             u.DenseBlock(18, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(18, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**8, p=0.2)
+wide = Wide()
+model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %%
+
+# valid score: 0.87978
+class Deep(nn.Module):
+    def __init__(self, units=18, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(18, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
@@ -137,6 +197,8 @@ class Deep(nn.Module):
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.Tanh(), p),
             nn.Linear(units, 1)
         )
@@ -169,7 +231,7 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**8, p=0.2)
+deep = Deep(units=2**7, p=0.15)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -177,10 +239,11 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.01)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
+#lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-7, -1)
 lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50, 1e-7, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
@@ -265,7 +328,7 @@ def valid_loop(data, model, loss_fn):
     
     return avg_loss, auc
 
-def valid_prediction(data, model, loss_fn):
+def get_prediction(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -305,11 +368,10 @@ def valid_prediction(data, model, loss_fn):
 
 # %%
 
-epochs = 100
+epochs = 200
 total_start = time.time()
 
 for t in range(epochs):
-    
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
     #print(f'Current learning rate: {curr_lr}')
@@ -338,7 +400,7 @@ for t in range(epochs):
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if t < 50:
+    if t < 100:
         lr_scheduler.step()
     #else:
     #    optimizer.param_groups[0]['lr'] /= 1.1
@@ -363,8 +425,10 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 
 # %%
 
-val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
+val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred']).T
+
+train_labels, train_pred = get_prediction(ds_train_all_np, best_model, loss_fn)
 
 # %%
 
