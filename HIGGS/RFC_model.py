@@ -78,11 +78,16 @@ print(f'Score: {score:.4f}')
 
 # %%
 
+pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
 pred_df = pd.DataFrame(pred, columns=['pred'])
+
+pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
+pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
 
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\RFC_prediction.csv', index=False)
+pred_train_df.to_csv(data_dir + '\\predictions\\RFC_prediction_train.csv', index=False)
 
 # %%
 
