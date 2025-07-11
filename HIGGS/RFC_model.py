@@ -79,10 +79,10 @@ print(f'Train score: {score_train:.5f}')
 # %%
 
 #pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
-pred_df = pd.DataFrame(pred, columns=['pred'])
+pred_df = pd.DataFrame(pred.round(8), columns=['pred'])
 
 #pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
-pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
+pred_train_df = pd.DataFrame(pred_train.round(8), columns=['pred'])
 pred_train_df1 = pred_train_df[:int(training_size/2)]
 pred_train_df2 = pred_train_df[int(training_size/2):]
 
