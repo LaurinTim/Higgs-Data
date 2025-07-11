@@ -50,7 +50,7 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.make_ds(train_files, batch=training_size, shuffle=True)
+ds_train = u.make_ds(train_files, batch=training_size, shuffle=False)
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 

@@ -50,7 +50,7 @@ print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}
 
 # %%
 
-ds_train = u.make_ds(train_files, batch=training_size, shuffle=True)
+ds_train = u.make_ds(train_files, batch=training_size, shuffle=False)
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
@@ -156,6 +156,26 @@ print(f'Train score: {score_train:.5f}')
 
 if round(score, 5)>best:
     print('New best prediction!!!')
+    
+# %%
+    
+modelRFC = RandomForestClassifier(n_estimators=300, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+modelRFC.fit(arr_train[0], arr_train[1])
+
+# %%
+
+pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
+score = roc_auc_score(arr_valid[1], pred)
+
+pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
+score_train = roc_auc_score(arr_train[1], pred_train)
+
+print(f'Score: {score:.4f}')
+print(f'Train score: {score_train:.4f}')
+
     
 # %%
 
