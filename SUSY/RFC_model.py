@@ -173,8 +173,8 @@ score = roc_auc_score(arr_valid[1], pred)
 pred_train = modelRFC.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
-print(f'Score: {score:.4f}')
-print(f'Train score: {score_train:.4f}')
+print(f'Score: {score:.5f}')
+print(f'Train score: {score_train:.5f}')
 
     
 # %%
