@@ -39,22 +39,18 @@ valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfre
 
 training_size = int(1.05e7)
 validation_size = int(5e5)
-BATCH_SIZE_PER_REPLICA = 2 ** 11
-batch_size = BATCH_SIZE_PER_REPLICA
-steps_per_epoch = training_size // batch_size
-validation_steps = validation_size // batch_size
-
-print(f"steps_per_epoch: {steps_per_epoch}, validation_steps: {validation_steps}")
 
 # %%
 
-ds_train = u.make_ds(train_files, batch=training_size, shuffle=True)
+ds_train = u.make_ds(train_files, batch=training_size, shuffle=False)
 ds_train_np = ds_train.as_numpy_iterator()
 arr_train = next(iter(ds_train_np))
 
 ds_valid = u.make_ds(valid_files, batch=validation_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 arr_valid = next(iter(ds_valid_np))
+
+print(f"Train size: {len(arr_train[0])}, Validation size: {len(arr_valid[0])}")
 
 # %%
 
@@ -70,8 +66,8 @@ score = roc_auc_score(arr_valid[1], pred)
 pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
-print(f'Score: {score:.4f}')
-print(f'Train score: {score_train:.4f}')
+print(f'Score: {score:.5f}')
+print(f'Train score: {score_train:.5f}')
 
 # %%
 
@@ -80,11 +76,14 @@ pred_df = pd.DataFrame(pred, columns=['pred'])
 
 pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
 pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
+pred_train_df1 = pred_train_df[:int(training_size/2)]
+pred_train_df2 = pred_train_df[int(training_size/2):]
 
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv', index=False)
-pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
+pred_train_df1.to_csv(data_dir + '\\predictions\\XGB_prediction_train_part1.csv', index=False)
+pred_train_df2.to_csv(data_dir + '\\predictions\\XGB_prediction_train_part2.csv', index=False)
 
 # %%
 
