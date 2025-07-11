@@ -47,8 +47,8 @@ valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS data\\validation' + '\\*.tfre
 #training_size = u.count_samples(train_files)
 #validation_size = u.count_samples(valid_files)
 
-training_size = int(1.05e7/21)
-validation_size = int(5e5)
+#training_size = int(1.05e7/21)
+#validation_size = int(5e5)
 training_size = int(1.05e7)
 validation_size = int(5e5)
 BATCH_SIZE_PER_REPLICA = 2 ** 11
@@ -65,6 +65,9 @@ ds_train_np = ds_train.as_numpy_iterator()
 
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
+
+ds_train_all = u.make_ds(train_files, batch=training_size, shuffle=False)
+ds_train_all_np = ds_train_all.as_numpy_iterator()
 
 ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
 ds_valid_all_np = ds_valid_all.as_numpy_iterator()
@@ -531,7 +534,7 @@ def valid_loop(data, model, loss_fn):
     
     return avg_loss, auc
 
-def valid_prediction(data, model, loss_fn):
+def get_prediction(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -576,7 +579,6 @@ total_start = time.time()
 cont = True
 optimizer.param_groups[0]['lr'] = 1e-6
 for t in range(epochs):
-    t += 107
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
     #print(f'Current learning rate: {curr_lr}')
@@ -605,7 +607,7 @@ for t in range(epochs):
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if optimizer.param_groups[0]['lr'] >= 1e-8 and False:
+    if optimizer.param_groups[0]['lr'] >= 1e-8:
         lr_scheduler.step()
         
     if optimizer.param_groups[0]['lr'] == 1e-10:
@@ -633,7 +635,7 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 
 # %%
 
-val_labels, val_pred = valid_prediction(ds_valid_all_np, best_model, loss_fn)
+val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
 # %%
