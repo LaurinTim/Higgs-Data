@@ -577,7 +577,7 @@ def get_prediction(data, model, loss_fn):
 epochs = 200
 total_start = time.time()
 cont = True
-optimizer.param_groups[0]['lr'] = 1e-6
+#optimizer.param_groups[0]['lr'] = 1e-6
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     curr_lr = optimizer.param_groups[0]['lr']
@@ -638,6 +638,11 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
+train_labels, train_pred = get_prediction(ds_train_all_np, best_model, loss_fn)
+pred_train_df = pd.DataFrame(train_pred, columns=['pred']).T
+pred_train_df1 = pred_train_df[:int(training_size/2)]
+pred_train_df2 = pred_train_df[int(training_size/2):]
+
 # %%
 
 train_info = pd.DataFrame([train_history, train_history_auc], index=['loss_history', 'auc_history']).T
@@ -647,6 +652,17 @@ valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_histo
 
 train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
 valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
+
+# %%
+
+pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
+pred_train_df1.to_csv(data_dir + '\\predictions\\DL_prediction_train_part1.csv', index=False)
+pred_train_df2.to_csv(data_dir + '\\predictions\\DL_prediction_train_part2.csv', index=False)
+
+# %%
+
+val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
+pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
 
