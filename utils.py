@@ -50,13 +50,13 @@ def get_HIGGS_labels():
         if train_step == total_train_steps:
             break
         
-        train_labels.append(labels)
+        train_labels.extend(labels)
         
     for valid_step, (features, labels) in enumerate(ds_valid_np):
         if valid_step == total_valid_steps:
             break
         
-        valid_labels.append(labels)
+        valid_labels.extend(labels)
     
     return train_labels, valid_labels
 
@@ -81,13 +81,13 @@ def get_SUSY_labels():
     train_labels = []
     valid_labels = []
     
-    for train_step, (features, labels) in tqdm(enumerate(ds_train_np), total=int(total_train_steps)):
+    for train_step, (features, labels) in enumerate(ds_train_np):
         if train_step == total_train_steps:
             break
         
         train_labels.extend(labels)
         
-    for valid_step, (features, labels) in tqdm(enumerate(ds_valid_np), total=int(total_valid_steps)):
+    for valid_step, (features, labels) in enumerate(ds_valid_np):
         if valid_step == total_valid_steps:
             break
         
