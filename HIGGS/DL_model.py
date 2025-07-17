@@ -565,8 +565,8 @@ def get_prediction_train(data, model, loss_fn):
     avg_loss = sum_loss / max(sum_count, 1)
     auc = roc_auc_score(ret_labels, ret_preds)
         
-    print(f"Validation average loss: {avg_loss:.5f}")
-    print(f'Validation auc: {auc:.5f}')
+    print(f"Train average loss: {avg_loss:.5f}")
+    print(f'Train auc: {auc:.5f}')
     
     return ret_labels, ret_preds
 
@@ -600,7 +600,7 @@ def get_prediction(data, model, loss_fn):
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
         
-    print(f"Validation average loss: {avg_loss:.6f}")
+    print(f"Validation loss: {avg_loss:.6f}")
     print(f'Validation auc: {auc:.5f}')
     
     #val_labels = val_labels[:validation_size]
@@ -672,12 +672,15 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 # %%
 
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
-pred_df = pd.DataFrame(val_pred, columns=['pred']).T
+pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
 
 train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
-pred_train_df = pd.DataFrame(train_pred, columns=['pred']).T
+pred_train_df = pd.DataFrame(train_pred, columns=['pred'])
+
+# %%
+
 pred_train_df1 = pred_train_df[:int(training_size/2)]
 pred_train_df2 = pred_train_df[int(training_size/2):]
 
