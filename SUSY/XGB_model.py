@@ -111,8 +111,8 @@ score = roc_auc_score(arr_valid[1], pred)
 pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
-print(f'Score: {score:.5f}')
-print(f'Train score: {score_train:.5f}')
+print(f'Score: {score:.6f}')
+print(f'Train score: {score_train:.6f}')
 
 # %%
 
@@ -130,18 +130,37 @@ score = roc_auc_score(arr_valid[1], pred)
 pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
 score_train = roc_auc_score(arr_train[1], pred_train)
 
-print(f'Score: {score:.5f}')
-print(f'Train score: {score_train:.5f}')
+print(f'Score: {score:.6f}')
+print(f'Train score: {score_train:.6f}')
+
+# %%
+
+# 0.877811
+modelXGB = xgb.XGBClassifier(n_estimators=300, max_depth=6, max_leaves=None, 
+                             max_bin=256, eta=0.239, gamma=0.83, min_child_weight=6, 
+                             max_delta_step=1.8,
+                             objective='binary:logistic', n_jobs=-1, seed=42)
+
+modelXGB.fit(arr_train[0], arr_train[1])
+
+pred = modelXGB.predict_proba(arr_valid[0])[:, 1]
+score = roc_auc_score(arr_valid[1], pred)
+
+pred_train = modelXGB.predict_proba(arr_train[0])[:, 1]
+score_train = roc_auc_score(arr_train[1], pred_train)
+
+print(f'Score: {score:.6f}')
+print(f'Train score: {score_train:.6f}')
 
 # %%
 
 pred_df = pd.DataFrame(pred, columns=['pred'])
-pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
+#pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
 
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv', index=False)
-pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
+#pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
 
 # %%
 
