@@ -66,7 +66,7 @@ ds_train_np = ds_train.as_numpy_iterator()
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
-ds_train_all = u.make_ds(train_files, batch=training_size, shuffle=False)
+ds_train_all = u.make_ds(train_files, batch=50000, shuffle=False)
 ds_train_all_np = ds_train_all.as_numpy_iterator()
 
 ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
@@ -534,6 +534,42 @@ def valid_loop(data, model, loss_fn):
     
     return avg_loss, auc
 
+def get_prediction_train(data, model, loss_fn):
+    # Set the model to evaluation mode - important for batch normalization and dropout layers
+    # Unnecessary in this situation but added for best practices
+    model.eval()
+    sum_loss = 0
+    sum_count = 0
+    ret_labels = []
+    ret_preds = []
+    
+    # Evaluating the model with torch.no_grad() ensures that no gradients are computed during test mode
+    # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
+    with torch.no_grad():
+        for train_step, (features, labels) in enumerate(data):
+            if train_step == training_size/50000:
+                break
+            
+            features = torch.from_numpy(copy.copy(features)).to(device)
+            labels = torch.from_numpy(copy.copy(labels)).to(device)
+            
+            outputs = model(features)
+            outputs = torch.squeeze(outputs)
+            loss = loss_fn(outputs, labels.float()).item()
+            sum_loss += loss
+            sum_count += 1
+            
+            ret_labels.extend(labels.detach().cpu().numpy())
+            ret_preds.extend(outputs.detach().cpu().numpy())
+            
+    avg_loss = sum_loss / max(sum_count, 1)
+    auc = roc_auc_score(ret_labels, ret_preds)
+        
+    print(f"Validation average loss: {avg_loss:.5f}")
+    print(f'Validation auc: {auc:.5f}')
+    
+    return ret_labels, ret_preds
+
 def get_prediction(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
@@ -638,10 +674,18 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred']).T
 
-train_labels, train_pred = get_prediction(ds_train_all_np, best_model, loss_fn)
+# %%
+
+train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
 pred_train_df = pd.DataFrame(train_pred, columns=['pred']).T
 pred_train_df1 = pred_train_df[:int(training_size/2)]
 pred_train_df2 = pred_train_df[int(training_size/2):]
+
+# %%
+
+pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
+pred_train_df1.to_csv(data_dir + '\\predictions\\DL_prediction_train_part1.csv', index=False)
+pred_train_df2.to_csv(data_dir + '\\predictions\\DL_prediction_train_part2.csv', index=False)
 
 # %%
 
@@ -652,12 +696,6 @@ valid_info = pd.DataFrame([valid_history, valid_history_auc], index=['loss_histo
 
 train_info.to_csv(data_dir + "\\DL info\\train_info.csv", index=False)
 valid_info.to_csv(data_dir + "\\DL info\\valid_info.csv", index=False)
-
-# %%
-
-pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
-pred_train_df1.to_csv(data_dir + '\\predictions\\DL_prediction_train_part1.csv', index=False)
-pred_train_df2.to_csv(data_dir + '\\predictions\\DL_prediction_train_part2.csv', index=False)
 
 # %%
 
