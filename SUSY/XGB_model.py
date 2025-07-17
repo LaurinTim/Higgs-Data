@@ -155,12 +155,12 @@ print(f'Train score: {score_train:.6f}')
 # %%
 
 pred_df = pd.DataFrame(pred, columns=['pred'])
-#pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
+pred_train_df = pd.DataFrame(pred_train, columns=['pred'])
 
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\XGB_prediction.csv', index=False)
-#pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
+pred_train_df.to_csv(data_dir + '\\predictions\\XGB_prediction_train.csv', index=False)
 
 # %%
 
