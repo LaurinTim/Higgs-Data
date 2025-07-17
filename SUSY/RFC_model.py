@@ -167,6 +167,14 @@ modelRFC.fit(arr_train[0], arr_train[1])
 
 # %%
 
+modelRFC = RandomForestClassifier(n_estimators=400, criterion='gini', max_depth=30,
+                                  min_samples_split=2, min_samples_leaf=2, min_weight_fraction_leaf=2.1e-5, 
+                                  max_features='sqrt', 
+                                  max_leaf_nodes=None, n_jobs=-1, random_state=42, verbose=2)
+modelRFC.fit(arr_train[0], arr_train[1])
+
+# %%
+
 pred = modelRFC.predict_proba(arr_valid[0])[:, 1]
 score = roc_auc_score(arr_valid[1], pred)
 
