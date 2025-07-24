@@ -285,7 +285,7 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**10, p=0.2)
+deep = Deep(units=2**8, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
