@@ -180,13 +180,12 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
+# valid score: 0.87984
 class Deep(nn.Module):
     def __init__(self, units=18, p=0.1):
         super().__init__()
         self.linear_stack = nn.Sequential(
             u.DenseBlock(18, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
@@ -231,7 +230,62 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**7, p=0.15)
+deep = Deep(units=2**9, p=0.2)
+wide = Wide()
+model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %%
+
+class Deep(nn.Module):
+    def __init__(self, units=18, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(18, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(18, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**10, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -462,7 +516,7 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 # %%
 
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
-pred_df = pd.DataFrame(val_pred, columns=['pred']).T
+pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
 
