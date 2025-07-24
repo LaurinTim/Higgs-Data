@@ -94,3 +94,34 @@ def get_SUSY_labels():
         valid_labels.extend(labels)
     
     return train_labels, valid_labels
+
+
+def plot_training_info(train_df, valid_df, n=300) -> None:
+    train_loss = train_df.loss_history.tolist()
+    train_auc = train_df.auc_history.tolist()
+    valid_loss = valid_df.loss_history.tolist()
+    valid_auc = valid_df.auc_history.tolist()
+    
+    total_epochs = len(valid_loss)
+    
+    train_loss_truncated = np.array(train_loss[:(len(train_loss) - (len(train_loss) % n))]).reshape(-1, n).mean(axis=1)
+    train_auc_truncated = np.array(train_auc[:(len(train_auc) - (len(train_auc) % n))]).reshape(-1, n).mean(axis=1)
+
+    x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
+    x_valid = np.linspace(0, total_epochs-1, total_epochs)
+
+    plt.figure(figsize=(15,8))
+
+    plt.plot(x_train, train_loss_truncated, c='k', label='Training loss')
+    plt.plot(x_valid, valid_loss, c='r', linestyle='--', label='Validation loss')
+
+    plt.legend(loc='best')
+    plt.show()
+    
+    plt.figure(figsize=(15,8))
+
+    plt.plot(x_train, train_auc_truncated, c='k', label='Training auc')
+    plt.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
+
+    plt.legend(loc='best')
+    plt.show()
