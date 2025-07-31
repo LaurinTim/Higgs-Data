@@ -90,6 +90,14 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, n=300) -> N
     x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
     x_valid = np.linspace(0, total_epochs-1, total_epochs)
 
+    train_loss_truncated = np.array(train_loss_truncated)[x_train>=2]
+    train_auc_truncated = np.array(train_auc_truncated)[x_train>=2]
+    x_train = x_train[x_train>=2]
+    
+    valid_loss = np.array(valid_loss)[x_valid>=2]
+    valid_auc = np.array(valid_auc)[x_valid>=2]
+    x_valid = x_valid[x_valid>=2]
+
     plt.figure(figsize=(15,8))
 
     plt.plot(x_train, train_loss_truncated, c='k', label='Training loss')
@@ -102,7 +110,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, n=300) -> N
 
     plt.plot(x_train, train_auc_truncated, c='k', label='Training auc')
     plt.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
-
+    
     plt.legend(loc='best')
     plt.show()
     

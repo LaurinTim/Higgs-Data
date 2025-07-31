@@ -51,7 +51,7 @@ valid_files = tf.io.gfile.glob(data_dir + '\\SUSY data\\validation' + '\\*.tfrec
 #validation_size = int(5e5)
 training_size = int(4.5e6)
 validation_size = int(5e5)
-BATCH_SIZE_PER_REPLICA = 2 ** 11
+BATCH_SIZE_PER_REPLICA = 2**11
 batch_size = BATCH_SIZE_PER_REPLICA
 steps_per_epoch = training_size // batch_size
 validation_steps = validation_size // batch_size
@@ -251,9 +251,6 @@ class Deep(nn.Module):
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
             u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.Tanh(), p),
             nn.Linear(units, 1)
         )
 
@@ -285,7 +282,7 @@ class DeepWide(nn.Module):
         logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
         return logits
 
-deep = Deep(units=2**8, p=0.2)
+deep = Deep(units=2**5, p=0.05)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
@@ -293,12 +290,13 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 model.to(device)
 
+#optimizer = torch.optim.AdamW(model.parameters(), lr=1e-2, weight_decay=0.0)
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-7, -1)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-7, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-5, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
@@ -310,7 +308,7 @@ train_history_auc = []
 valid_history_auc = []
 
 
-def train_loop(data, model, loss_fn, optimizer):    
+def train_loop(data, model, loss_fn, optimizer):        
     losses = []
     aucs = []
     
@@ -328,6 +326,7 @@ def train_loop(data, model, loss_fn, optimizer):
         optimizer.zero_grad()
         outputs = model(features)
         outputs = torch.squeeze(outputs)
+        
         loss = loss_fn(outputs, labels.float())
         losses.append(loss.cpu().detach().numpy())
         aucs.append(roc_auc_score(labels.detach().cpu().numpy(), outputs.detach().cpu().numpy()))
@@ -335,9 +334,10 @@ def train_loop(data, model, loss_fn, optimizer):
         # Backpropagation
         loss.backward()
         optimizer.step()
-
-        if train_step % 10000 == -1:
+        if train_step % 1000 == -1:
             loss = loss.item()
+            print()
+            print(f"train step: {train_step}")
             print(f"loss: {loss:.5f}")
             print(f'Auc: {aucs[-1]:.5f}')
             
@@ -487,7 +487,7 @@ for t in range(epochs):
         print('Early stopping triggered')
         break
     
-    #optimizer.param_groups[0]['lr'] /= lr_div
+    #optimizer.param_groups[0]['lr'] /= 1.1
     
     #lr_scheduler.step(valid_history[-1])
     if t < 100:
