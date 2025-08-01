@@ -144,7 +144,23 @@ def plot_training_info(train_df, valid_df, n=300, start_epoch=0) -> None:
 def CosineAnnealing_lr(epoch, start_lr, end_lr, dec_epochs):    
     return end_lr + 1/2 * (start_lr - end_lr) * (1 + np.cos(np.pi * epoch/dec_epochs)) if epoch < dec_epochs else end_lr
 
-
+def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
+    
+    y = func(x)
+    
+    fig, ax = plt.subplots(figsize=(7, 4))
+    
+    ax.plot(x, y, c='k', label=legend, linewidth=2)
+    
+    ax.legend(loc='best')
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    
+    if sci:
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    
+    plt.show()
 
 
 
