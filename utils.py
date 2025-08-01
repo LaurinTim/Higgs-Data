@@ -141,6 +141,8 @@ def plot_training_info(train_df, valid_df, n=300, start_epoch=0) -> None:
     
     plt.show()
 
+def CosineAnnealing_lr(epoch, start_lr, end_lr, dec_epochs):    
+    return end_lr + 1/2 * (start_lr - end_lr) * (1 + np.cos(np.pi * epoch/dec_epochs)) if epoch < dec_epochs else end_lr
 
 
 
