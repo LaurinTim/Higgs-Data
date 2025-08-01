@@ -96,7 +96,7 @@ def get_SUSY_labels():
     return train_labels, valid_labels
 
 
-def plot_training_info(train_df, valid_df, n=300) -> None:
+def plot_training_info(train_df, valid_df, n=300, start_epoch=0) -> None:
     train_loss = train_df.loss_history.tolist()
     train_auc = train_df.auc_history.tolist()
     valid_loss = valid_df.loss_history.tolist()
@@ -104,24 +104,122 @@ def plot_training_info(train_df, valid_df, n=300) -> None:
     
     total_epochs = len(valid_loss)
     
+    train_steps_per_epoch = int(len(train_loss) / total_epochs)
+    
+    if n == "epoch":
+        n = train_steps_per_epoch
+    
+    if start_epoch > 0:
+        train_loss = train_loss[start_epoch * train_steps_per_epoch:]
+        train_auc = train_auc[start_epoch * train_steps_per_epoch:]
+        valid_loss = valid_loss[start_epoch:]
+        valid_auc = valid_auc[start_epoch:]
+    
     train_loss_truncated = np.array(train_loss[:(len(train_loss) - (len(train_loss) % n))]).reshape(-1, n).mean(axis=1)
     train_auc_truncated = np.array(train_auc[:(len(train_auc) - (len(train_auc) % n))]).reshape(-1, n).mean(axis=1)
-
-    x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
-    x_valid = np.linspace(0, total_epochs-1, total_epochs)
-
-    plt.figure(figsize=(15,8))
-
-    plt.plot(x_train, train_loss_truncated, c='k', label='Training loss')
-    plt.plot(x_valid, valid_loss, c='r', linestyle='--', label='Validation loss')
-
-    plt.legend(loc='best')
-    plt.show()
     
-    plt.figure(figsize=(15,8))
+    x_train = np.linspace(start_epoch, total_epochs-1, len(train_loss_truncated))
+    x_valid = np.linspace(start_epoch, total_epochs-1, total_epochs-start_epoch)
+    
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
 
-    plt.plot(x_train, train_auc_truncated, c='k', label='Training auc')
-    plt.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
+    ax1.plot(x_train, train_loss_truncated, c='k', label='Training loss')
+    ax1.plot(x_valid, valid_loss, c='r', linestyle='--', label='Validation loss')
 
-    plt.legend(loc='best')
+    ax1.legend(loc='best')
+    ax1.set_title("Loss per Epoch")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Loss")
+    
+    ax2.plot(x_train, train_auc_truncated, c='k', label='Training auc')
+    ax2.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
+
+    ax2.legend(loc='best')
+    ax2.set_title("ROC AUC Score per Epoch")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("ROC AUC Score")
+    
     plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
