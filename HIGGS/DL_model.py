@@ -9,6 +9,7 @@ from sklearn.metrics import roc_auc_score
 import time
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from torchinfo import summary
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
@@ -439,6 +440,20 @@ class DeepWide(nn.Module):
 deep = Deep(units=2**11, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %%
+
+class dbm(nn.Module):
+    def __init__(self, units1=28, units2=28, p=0.1):
+        super().__init__()
+        self.block = u.DenseBlock(units1, units2, nn.GELU(), p)
+        
+    def forward(self, x):
+        logits = self.block(x)
+        return logits
+
+db = dbm(units1=28, units2=2**11, p=0.2)
+dbb = dbm(2**11, 2**11, p=0.2)
 
 # %%
 
