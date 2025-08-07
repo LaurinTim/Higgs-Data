@@ -161,6 +161,53 @@ def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
         ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
     
     plt.show()
+    
+def roc_curve(y, p):
+    
+    y = y.astype(bool) if y.dtype != bool else y
+        
+    desc_score_indices = np.argsort(-p)
+    sorted_y = y[desc_score_indices]
+    sorted_p = p[desc_score_indices]
+
+    
+    tp = np.cumsum(sorted_y)
+    fp = np.cumsum(~sorted_y)
+    
+    tp_total = tp[-1]
+    fp_total = fp[-1]
+    
+    distinct_value_indices = np.where(np.diff(sorted_p))[0]
+    threshold_idxs = np.r_[distinct_value_indices, sorted_y.size - 1]
+    
+    tpr = tp[threshold_idxs] / tp_total
+    fpr = fp[threshold_idxs] / fp_total
+    
+    return fpr, tpr
+
+def auc(y, p):
+    fpr, tpr = roc_curve(y, p)
+    
+    tpr_diff = tpr[1:] - tpr[:-1]
+    fpr_diff = fpr[1:] - fpr[:-1]
+    
+    auc_rect_arr = tpr[:-1] * fpr_diff
+    auc_tri_arr = tpr_diff/2 * fpr_diff
+        
+    return float(np.sum(auc_rect_arr + auc_tri_arr))
+
+def auc_from_roc(fpr, tpr):
+    
+    tpr_diff = tpr[1:] - tpr[:-1]
+    fpr_diff = fpr[1:] - fpr[:-1]
+    
+    auc_rect_arr = tpr[:-1] * fpr_diff
+    auc_tri_arr = tpr_diff/2 * fpr_diff
+        
+    return float(np.sum(auc_rect_arr + auc_tri_arr))
+
+
+
 
 
 
