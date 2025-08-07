@@ -174,14 +174,14 @@ def roc_curve(y, p):
     tp = np.cumsum(sorted_y)
     fp = np.cumsum(~sorted_y)
     
-    tp_total = tp[-1]
-    fp_total = fp[-1]
+    p_total = tp[-1]
+    p_total = fp[-1]
     
     distinct_value_indices = np.where(np.diff(sorted_p))[0]
     threshold_idxs = np.r_[distinct_value_indices, sorted_y.size - 1]
     
-    tpr = tp[threshold_idxs] / tp_total
-    fpr = fp[threshold_idxs] / fp_total
+    tpr = tp[threshold_idxs] / p_total
+    fpr = fp[threshold_idxs] / p_total
     
     return fpr, tpr
 
