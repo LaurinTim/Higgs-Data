@@ -13,6 +13,7 @@ data_dir = str(Path(__file__).resolve().parent)
 class EarlyStopping:
     """Stops training when a monitored metric has stopped improving."""
     def __init__(self, patience=7, min_delta=0, path='checkpoint.pt'):
+        # Check self.counter if the loss was lower (better) than for the current iteration
         """
         Args:
             patience (int): How long to wait after last time the monitored metric improved.
