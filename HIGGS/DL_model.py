@@ -394,6 +394,20 @@ model = DeepWideConv(deep, wide, conv, deep_ratio=1/3, wide_ratio=1/3)
 
 # %%
 
+class dbm(nn.Module):
+    def __init__(self, units1=28, units2=28, p=0.1):
+        super().__init__()
+        self.block = u.DenseBlock(units1, units2, nn.GELU(), p)
+        
+    def forward(self, x):
+        logits = self.block(x)
+        return logits
+
+db = dbm(units1=28, units2=2**11, p=0.2)
+dbb = dbm(2**11, 2**11, p=0.2)
+
+# %%
+
 class Deep(nn.Module):
     def __init__(self, units=28, p=0.1):
         super().__init__()
@@ -443,20 +457,6 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
-class dbm(nn.Module):
-    def __init__(self, units1=28, units2=28, p=0.1):
-        super().__init__()
-        self.block = u.DenseBlock(units1, units2, nn.GELU(), p)
-        
-    def forward(self, x):
-        logits = self.block(x)
-        return logits
-
-db = dbm(units1=28, units2=2**11, p=0.2)
-dbb = dbm(2**11, 2**11, p=0.2)
-
-# %%
-
 model.to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
@@ -471,13 +471,72 @@ lr_div = (1e-2 / 1e-6)**(1 / 30)
 
 # %%
 
+class Deep(nn.Module):
+    def __init__(self, units=28, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(28, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(28, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**11, p=0.2)
+wide = Wide()
+model = wide
+
+# %% For only the wide model
+
+model.to(device)
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-5, -1)
+loss_fn = nn.BCEWithLogitsLoss()
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
+
+lr_div = (1e-2 / 1e-6)**(1 / 30)
+
+# %%
+
 train_history = []
 valid_history = []
 train_history_auc = []
 valid_history_auc = []
 
-
-def train_loop(data, model, loss_fn, optimizer):    
+def train_loop(data, model, loss_fn, optimizer):
     losses = []
     aucs = []
     
@@ -640,8 +699,8 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.8f}')
-    
+    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.8f}, {early_stopping.counter}')
+
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
     train_history_auc.extend(train_aucs)
@@ -675,7 +734,7 @@ for t in range(epochs):
 total_duration = time.time() - total_start
 print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
-# %%
+ # %%
 
 u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/8))
 
