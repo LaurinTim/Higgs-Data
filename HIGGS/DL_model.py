@@ -534,7 +534,7 @@ lr_div = (1e-2 / 1e-6)**(1 / 30)
 
 model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0)
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
 lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-5, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
