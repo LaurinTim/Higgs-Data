@@ -454,6 +454,7 @@ class DeepWide(nn.Module):
 deep = Deep(units=2**11, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
+model = Wide()
 
 # %%
 
@@ -516,9 +517,20 @@ class DeepWide(nn.Module):
 
 deep = Deep(units=2**11, p=0.2)
 wide = Wide()
-model = wide
+model = deep
 
 # %% For only the wide model
+
+model.to(device)
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 30, 1e-5, -1)
+loss_fn = nn.BCEWithLogitsLoss()
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
+
+lr_div = (1e-2 / 1e-6)**(1 / 30)
+
+# %% For only the deep model
 
 model.to(device)
 
