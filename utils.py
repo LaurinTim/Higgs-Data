@@ -162,7 +162,7 @@ def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
     
     plt.show()
     
-def plot_data(x, y, title, legend, xlabel, ylabel, sci=True):
+def plot_data(x, y, title, legend=None, xlabel=None, ylabel=None, sci=True):
         
     fig, ax = plt.subplots(figsize=(7, 4))
     
