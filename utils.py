@@ -168,10 +168,10 @@ def plot_data(x, y, title, legend=None, xlabel=None, ylabel=None, sci=True):
     
     ax.plot(x, y, c='k', label=legend, linewidth=2)
     
-    ax.legend(loc='best')
+    if legend: ax.legend(loc='best')
     ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if xlabel: ax.set_xlabel(xlabel)
+    if ylabel: ax.set_ylabel(ylabel)
     
     if sci:
         ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
