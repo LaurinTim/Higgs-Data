@@ -135,9 +135,9 @@ def plot_training_info(train_df, valid_df, n=300, start_epoch=0) -> None:
     ax2.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
 
     ax2.legend(loc='best')
-    ax2.set_title("ROC AUC Score per Epoch")
+    ax2.set_title("AUC Score per Epoch")
     ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("ROC AUC Score")
+    ax2.set_ylabel("AUC Score")
     
     plt.show()
 
@@ -148,6 +148,22 @@ def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
     
     y = func(x)
     
+    fig, ax = plt.subplots(figsize=(7, 4))
+    
+    ax.plot(x, y, c='k', label=legend, linewidth=2)
+    
+    ax.legend(loc='best')
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    
+    if sci:
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    
+    plt.show()
+    
+def plot_data(x, y, title, legend, xlabel, ylabel, sci=True):
+        
     fig, ax = plt.subplots(figsize=(7, 4))
     
     ax.plot(x, y, c='k', label=legend, linewidth=2)
