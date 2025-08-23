@@ -123,16 +123,16 @@ def plot_training_info(train_df, valid_df, n=300, start_epoch=0) -> None:
     
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(16,5))
 
-    ax1.plot(x_train, train_loss_truncated, c='k', label='Training loss')
-    ax1.plot(x_valid, valid_loss, c='r', linestyle='--', label='Validation loss')
+    ax1.plot(x_train, train_loss_truncated, c='k', label='Training loss', linewidth=2)
+    ax1.plot(x_valid, valid_loss, c='r', linestyle='--', label='Validation loss', linewidth=2)
 
     ax1.legend(loc='best')
     ax1.set_title("Loss per Epoch")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     
-    ax2.plot(x_train, train_auc_truncated, c='k', label='Training auc')
-    ax2.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation auc')
+    ax2.plot(x_train, train_auc_truncated, c='k', label='Training AUC', linewidth=2)
+    ax2.plot(x_valid, valid_auc, c='r', linestyle='--', label='Validation AUC', linewidth=2)
 
     ax2.legend(loc='best')
     ax2.set_title("AUC Score per Epoch")
@@ -164,7 +164,7 @@ def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
     
 def plot_data(x, y, title, legend=None, xlabel=None, ylabel=None, sci=True):
         
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt.subplots(figsize=(5, 4))
     
     ax.plot(x, y, c='k', label=legend, linewidth=2)
     
@@ -175,6 +175,24 @@ def plot_data(x, y, title, legend=None, xlabel=None, ylabel=None, sci=True):
     
     if sci:
         ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    
+    plt.show()
+    
+def plot_roc_curve(y_train, p_train, y_valid, p_valid):
+    fpr_train, tpr_train = roc_curve(y_train, p_train)
+    fpr_valid, tpr_valid = roc_curve(y_valid, p_valid)
+    
+    fig, ax = plt.subplots(figsize=(5, 4))
+    
+    ax.plot(fpr_train, tpr_train, c='k', label="Training ROC curve", linewidth=2)
+    ax.plot(fpr_valid, tpr_valid, c='r', label="Validation ROC curve", linestyle='--', linewidth=2)
+    
+    ax.legend(loc='best')
+    ax.set_title("ROC curve")
+    ax.set_xlabel("False positive rate")
+    ax.set_ylabel("True positive rate")
+    
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
     
     plt.show()
     
