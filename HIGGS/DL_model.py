@@ -623,8 +623,8 @@ def get_prediction_train(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
-    sum_loss = 0
-    sum_count = 0
+    #sum_loss = 0
+    #sum_count = 0
     ret_labels = []
     ret_preds = []
     
@@ -640,17 +640,19 @@ def get_prediction_train(data, model, loss_fn):
             
             outputs = model(features)
             outputs = torch.squeeze(outputs)
-            loss = loss_fn(outputs, labels.float()).item()
-            sum_loss += loss
-            sum_count += 1
+            #loss = loss_fn(outputs, labels.float()).item()
+            #sum_loss += loss
+            #sum_count += 1
             
             ret_labels.extend(labels.detach().cpu().numpy())
             ret_preds.extend(outputs.detach().cpu().numpy())
             
-    avg_loss = sum_loss / max(sum_count, 1)
+    #avg_loss = sum_loss / max(sum_count, 1)
+    loss = loss_fn(torch.from_numpy(copy.copy(np.array(ret_preds))).float(), torch.from_numpy(copy.copy(np.array(ret_labels))).float())
     auc = roc_auc_score(ret_labels, ret_preds)
         
-    print(f"Train average loss: {avg_loss:.5f}")
+    #print(f"Train average loss: {avg_loss:.5f}")
+    print(f'Train loss: {loss:.5f}')
     print(f'Train auc: {auc:.5f}')
     
     return ret_labels, ret_preds
@@ -763,6 +765,10 @@ pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
 pred_train_df = pd.DataFrame(train_pred, columns=['pred'])
+
+# %%
+
+roc_auc_score(train_labels, train_pred)
 
 # %%
 
