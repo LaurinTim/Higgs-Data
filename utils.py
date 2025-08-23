@@ -240,6 +240,10 @@ def auc_from_roc(fpr, tpr):
         
     return float(np.sum(auc_rect_arr + auc_tri_arr))
 
+def prob_from_logits(logits):
+    return nn.Sigmoid()(torch.tensor(logits))
+    
+
 
 
 
