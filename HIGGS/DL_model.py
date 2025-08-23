@@ -67,12 +67,6 @@ ds_train_np = ds_train.as_numpy_iterator()
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
-ds_train_all = u.make_ds(train_files, batch=50000, shuffle=False)
-ds_train_all_np = ds_train_all.as_numpy_iterator()
-
-ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
-ds_valid_all_np = ds_valid_all.as_numpy_iterator()
-
 # %%
 
 class Deep(nn.Module):
@@ -542,11 +536,6 @@ lr_div = (1e-2 / 1e-6)**(1 / 30)
 
 # %%
 
-train_history = []
-valid_history = []
-train_history_auc = []
-valid_history_auc = []
-
 def train_loop(data, model, loss_fn, optimizer):
     losses = []
     aucs = []
@@ -632,7 +621,7 @@ def get_prediction_train(data, model, loss_fn):
     # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
     with torch.no_grad():
         for train_step, (features, labels) in enumerate(data):
-            if train_step == training_size/50000:
+            if train_step == training_size/5e4:
                 break
             
             features = torch.from_numpy(copy.copy(features)).to(device)
@@ -654,6 +643,8 @@ def get_prediction_train(data, model, loss_fn):
     #print(f"Train average loss: {avg_loss:.5f}")
     print(f'Train loss: {loss:.5f}')
     print(f'Train auc: {auc:.5f}')
+    
+    ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
     
     return ret_labels, ret_preds
 
@@ -693,9 +684,16 @@ def get_prediction(data, model, loss_fn):
     #val_labels = val_labels[:validation_size]
     #val_preds = val_preds[:validation_size]
     
+    val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
+    
     return val_labels, val_preds
 
 # %%
+
+train_history = []
+valid_history = []
+train_history_auc = []
+valid_history_auc = []
 
 epochs = 200
 total_start = time.time()
@@ -758,17 +756,19 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 
 # %%
 
+ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
+ds_valid_all_np = ds_valid_all.as_numpy_iterator()
+
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
 
+ds_train_all = u.make_ds(train_files, batch=int(5e4), shuffle=False)
+ds_train_all_np = ds_train_all.as_numpy_iterator()
+
 train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
 pred_train_df = pd.DataFrame(train_pred, columns=['pred'])
-
-# %%
-
-roc_auc_score(train_labels, train_pred)
 
 # %%
 
