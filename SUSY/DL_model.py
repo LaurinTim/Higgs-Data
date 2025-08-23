@@ -66,12 +66,6 @@ ds_train_np = ds_train.as_numpy_iterator()
 ds_valid = u.make_ds(valid_files, batch=batch_size, shuffle=False)
 ds_valid_np = ds_valid.as_numpy_iterator()
 
-ds_train_all = u.make_ds(train_files, batch=50000, shuffle=False)
-ds_train_all_np = ds_train_all.as_numpy_iterator()
-
-ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
-ds_valid_all_np = ds_valid_all.as_numpy_iterator()
-
 # %%
 
 # valid score: 0.87982, train score: 0.87838
@@ -386,8 +380,8 @@ def get_prediction_train(data, model, loss_fn):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
-    sum_loss = 0
-    sum_count = 0
+    #sum_loss = 0
+    #sum_count = 0
     ret_labels = []
     ret_preds = []
     
@@ -395,7 +389,7 @@ def get_prediction_train(data, model, loss_fn):
     # also serves to reduce unnecessary gradient computations and memory usage for tensors with requires_grad=True
     with torch.no_grad():
         for train_step, (features, labels) in enumerate(data):
-            if train_step == training_size/50000:
+            if train_step == training_size/5e4:
                 break
             
             features = torch.from_numpy(copy.copy(features)).to(device)
@@ -403,18 +397,22 @@ def get_prediction_train(data, model, loss_fn):
             
             outputs = model(features)
             outputs = torch.squeeze(outputs)
-            loss = loss_fn(outputs, labels.float()).item()
-            sum_loss += loss
-            sum_count += 1
+            #loss = loss_fn(outputs, labels.float()).item()
+            #sum_loss += loss
+            #sum_count += 1
             
             ret_labels.extend(labels.detach().cpu().numpy())
             ret_preds.extend(outputs.detach().cpu().numpy())
             
-    avg_loss = sum_loss / max(sum_count, 1)
+    #avg_loss = sum_loss / max(sum_count, 1)
+    loss = loss_fn(torch.from_numpy(copy.copy(np.array(ret_preds))).float(), torch.from_numpy(copy.copy(np.array(ret_labels))).float())
     auc = roc_auc_score(ret_labels, ret_preds)
         
-    print(f"Train average loss: {avg_loss:.5f}")
+    #print(f"Train average loss: {avg_loss:.5f}")
+    print(f'Train loss: {loss:.5f}')
     print(f'Train auc: {auc:.5f}')
+    
+    ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
     
     return ret_labels, ret_preds
 
@@ -451,8 +449,7 @@ def get_prediction(data, model, loss_fn):
     print(f"Validation average loss: {avg_loss:.6f}")
     print(f'Validation auc: {auc:.5f}')
     
-    #val_labels = val_labels[:validation_size]
-    #val_preds = val_preds[:validation_size]
+    val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
     
     return val_labels, val_preds
 
@@ -515,10 +512,16 @@ best_model.load_state_dict(torch.load(data_dir + '\\EarlyStopping model\\best_mo
 
 # %%
 
+ds_valid_all = u.make_ds(valid_files, batch=validation_size, shuffle=False)
+ds_valid_all_np = ds_valid_all.as_numpy_iterator()
+
 val_labels, val_pred = get_prediction(ds_valid_all_np, best_model, loss_fn)
 pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
+
+ds_train_all = u.make_ds(train_files, batch=5e4, shuffle=False)
+ds_train_all_np = ds_train_all.as_numpy_iterator()
 
 train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
 pred_train_df = pd.DataFrame(train_pred, columns=['pred'])
