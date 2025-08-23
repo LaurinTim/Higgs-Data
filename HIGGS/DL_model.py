@@ -454,7 +454,6 @@ class DeepWide(nn.Module):
 deep = Deep(units=2**11, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
-model = Wide()
 
 # %%
 
@@ -464,7 +463,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.05)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-10, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-5, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
@@ -722,14 +721,14 @@ for t in range(epochs):
     if (t + 1) % 10 == 0:
         u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=100)
         
-    if early_stopping.early_stop and curr_lr <= 1e-5 and t>=120:
+    if early_stopping.early_stop: # and curr_lr <= 1e-5 and t>=120:
         print('Early stopping triggered')
         break
     
     #optimizer.param_groups[0]['lr'] /= lr_div
     
     #lr_scheduler.step(valid_history[-1])
-    if optimizer.param_groups[0]['lr'] >= 1e-8:
+    if t < 100: # optimizer.param_groups[0]['lr'] >= 1e-8:
         lr_scheduler.step()
         
     if optimizer.param_groups[0]['lr'] == 1e-10:
@@ -746,7 +745,7 @@ for t in range(epochs):
 total_duration = time.time() - total_start
 print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
- # %%
+# %%
 
 u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/8))
 
