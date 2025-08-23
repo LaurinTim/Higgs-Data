@@ -9,6 +9,7 @@ from sklearn.metrics import roc_auc_score
 import time
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from torchinfo import summary
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
@@ -230,55 +231,17 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
-class Deep(nn.Module):
-    def __init__(self, units=18, p=0.1):
-        super().__init__()
-        self.linear_stack = nn.Sequential(
-            u.DenseBlock(18, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            u.DenseBlock(units, units, nn.GELU(), p),
-            nn.Linear(units, 1)
-        )
+model.to(device)
 
-    def forward(self, x):
-        logits = self.linear_stack(x)
-        return logits
-    
-class Wide(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.linear_stack = nn.Sequential(
-            nn.Linear(18, 1),
-        )
-
-    def forward(self, x):
-        logits = self.linear_stack(x)
-        return logits
-    
-class DeepWide(nn.Module):
-    def __init__(self, deep, wide, deep_ratio=0.5):
-        super().__init__()
-        self.deep = deep
-        self.wide = wide
-        self.deep_ratio = deep_ratio
-
-    def forward(self, x):
-        deep_logits = self.deep(x)
-        wide_logits = self.wide(x)
-        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
-        return logits
-
-deep = Deep(units=2**5, p=0.05)
-wide = Wide()
-model = DeepWide(deep, wide, deep_ratio=0.5)
+#optimizer = torch.optim.AdamW(model.parameters(), lr=1e-2, weight_decay=0.0)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+#optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
+#lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
+#lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
+#lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-7, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-5, -1)
+loss_fn = nn.BCEWithLogitsLoss()
+early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
 # %%
 
@@ -290,7 +253,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-7, -1)
-lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-5, -1)
+lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50, 1e-5, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
 
@@ -469,7 +432,7 @@ for t in range(epochs):
     valid_loss, valid_auc = valid_loop(ds_valid_np, model, loss_fn)
     
     duration = time.time()-start_time
-    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.8f}')
+    print(f'Epoch {t+1} finished in {duration:.2f} seconds and with learning rate {curr_lr:.8f}, {early_stopping.counter}')
     
     train_history.extend(train_losses)
     valid_history.append(valid_loss)
@@ -503,7 +466,7 @@ print(f"Done! Total elapsed time is {total_duration:.2f} seconds.")
 
 # %%
 
-u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/16))
+u.plot_training_info(train_history, valid_history, train_history_auc, valid_history_auc, n=int(5126/4))
 
 # %%
 
@@ -520,7 +483,7 @@ pred_df = pd.DataFrame(val_pred, columns=['pred'])
 
 # %%
 
-ds_train_all = u.make_ds(train_files, batch=5e4, shuffle=False)
+ds_train_all = u.make_ds(train_files, batch=int(5e4), shuffle=False)
 ds_train_all_np = ds_train_all.as_numpy_iterator()
 
 train_labels, train_pred = get_prediction_train(ds_train_all_np, best_model, loss_fn)
