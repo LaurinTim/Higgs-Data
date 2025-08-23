@@ -644,7 +644,7 @@ def get_prediction_train(data, model, loss_fn):
     print(f'Train loss: {loss:.5f}')
     print(f'Train auc: {auc:.5f}')
     
-    ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
+    #ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
     
     return ret_labels, ret_preds
 
@@ -684,7 +684,7 @@ def get_prediction(data, model, loss_fn):
     #val_labels = val_labels[:validation_size]
     #val_preds = val_preds[:validation_size]
     
-    val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
+    #val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
     
     return val_labels, val_preds
 

@@ -231,6 +231,10 @@ model = DeepWide(deep, wide, deep_ratio=0.5)
 
 # %%
 
+SEED = 0
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
 model.to(device)
 
 #optimizer = torch.optim.AdamW(model.parameters(), lr=1e-2, weight_decay=0.0)
@@ -248,7 +252,7 @@ early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.
 model.to(device)
 
 #optimizer = torch.optim.AdamW(model.parameters(), lr=1e-2, weight_decay=0.0)
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.000)
 #optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=1, threshold=0.0001, cooldown=0, min_lr=0.000001, eps=1e-08)
 #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=0, threshold=0.00003, cooldown=0, min_lr=0.000001, eps=1e-08)
@@ -375,7 +379,7 @@ def get_prediction_train(data, model, loss_fn):
     print(f'Train loss: {loss:.5f}')
     print(f'Train auc: {auc:.5f}')
     
-    ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
+    #ret_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(ret_preds)))).detach().cpu().numpy()
     
     return ret_labels, ret_preds
 
@@ -412,7 +416,7 @@ def get_prediction(data, model, loss_fn):
     print(f"Validation average loss: {avg_loss:.6f}")
     print(f'Validation auc: {auc:.5f}')
     
-    val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
+    #val_preds = nn.Sigmoid()(torch.from_numpy(copy.copy(np.array(val_preds)))).detach().cpu().numpy()
     
     return val_labels, val_preds
 
@@ -450,7 +454,7 @@ for t in range(epochs):
     #optimizer.param_groups[0]['lr'] /= 1.1
     
     #lr_scheduler.step(valid_history[-1])
-    if t < 100:
+    if t < 50:
         lr_scheduler.step()
     #else:
     #    optimizer.param_groups[0]['lr'] /= 1.1
