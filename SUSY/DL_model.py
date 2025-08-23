@@ -532,6 +532,10 @@ pred_train_df2 = pred_train_df[int(training_size/2):]
 # %%
 
 pred_df.to_csv(data_dir + '\\predictions\\DL_prediction.csv', index=False)
+pred_train_df.to_csv(data_dir + '\\predictions\\DL_prediction_train.csv')
+
+# %%
+
 pred_train_df1.to_csv(data_dir + '\\predictions\\DL_prediction_train_part1.csv', index=False)
 pred_train_df2.to_csv(data_dir + '\\predictions\\DL_prediction_train_part2.csv', index=False)
 
