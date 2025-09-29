@@ -242,6 +242,26 @@ def auc_from_roc(fpr, tpr):
 
 def prob_from_logits(logits):
     return nn.Sigmoid()(torch.tensor(logits))
+
+def get_HIGGS_pred():
+    ret = dict()
+    
+    ret["DL_valid"] = pd.read_csv(data_dir + "\\HIGGS\\predictions\\DL_prediction_best.csv").to_numpy().reshape(-1)
+    ret["DL_train"] = pd.concat([pd.read_csv(data_dir + "\\HIGGS\\predictions\\DL_prediction_train_part1_best.csv"), 
+                                 pd.read_csv(data_dir + "\\HIGGS\\predictions\\DL_prediction_train_part2_best.csv")], 
+                                 axis=0, ignore_index=True)
+    
+    ret["XGB_valid"] = pd.read_csv(data_dir + "\\HIGGS\\predictions\\XGB_prediction_best.csv").to_numpy().reshape(-1)
+    ret["XGB_train"] = pd.concat([pd.read_csv(data_dir + "\\HIGGS\\predictions\\XGB_prediction_train_part1_best.csv"), 
+                                 pd.read_csv(data_dir + "\\HIGGS\\predictions\\XGB_prediction_train_part2_best.csv")], 
+                                 axis=0, ignore_index=True).to_numpy().reshape(-1)
+    
+    ret["RFC_valid"] = pd.read_csv(data_dir + "\\HIGGS\\predictions\\RFC_prediction_best.csv").to_numpy().reshape(-1)
+    ret["RFC_train"] = pd.concat([pd.read_csv(data_dir + "\\HIGGS\\predictions\\RFC_prediction_train_part1_best.csv"), 
+                                 pd.read_csv(data_dir + "\\HIGGS\\predictions\\RFC_prediction_train_part2_best.csv")], 
+                                 axis=0, ignore_index=True).to_numpy().reshape(-1)
+    
+    return ret
     
 
 
