@@ -334,6 +334,25 @@ def plot_roc_curves(data, valid_labels, train_labels):
     plt.show()
     
     return ret_aucs
+
+def expected_calibration_error(y_true, p_pred, n_bins=20, logits=True):
+    if logits:
+        p_pred = torch.nn.Sigmoid()(torch.tensor(p_pred)).numpy()
+    
+    y_true = np.asarray(y_true).astype(int)
+    p_pred = np.asarray(p_pred).astype(float)
+    bins = np.linspace(0.0, 1.0, n_bins+1)
+    idx = np.digitize(p_pred, bins) - 1
+    ece = 0.0
+    for b in range(n_bins):
+        mask = idx == b
+        if not np.any(mask): 
+            continue
+        conf = p_pred[mask].mean()
+        acc = y_true[mask].mean()
+        w = mask.mean()
+        ece += w * abs(acc - conf)
+    return ece
     
     
 
