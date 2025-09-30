@@ -282,6 +282,59 @@ def get_SUSY_pred():
                                  axis=0, ignore_index=True).to_numpy().reshape(-1)
     
     return ret
+
+def plot_roc_curves(data, valid_labels, train_labels):
+    fpr_DL_valid, tpr_DL_valid = roc_curve(valid_labels, data["DL_valid"])
+    fpr_XGB_valid, tpr_XGB_valid = roc_curve(valid_labels, data["XGB_valid"])
+    fpr_RFC_valid, tpr_RFC_valid = roc_curve(valid_labels, data["RFC_valid"])
+    
+    auc_DL_valid = auc_from_roc(fpr_DL_valid, tpr_DL_valid)
+    auc_XGB_valid = auc_from_roc(fpr_XGB_valid, tpr_XGB_valid)
+    auc_RFC_valid = auc_from_roc(fpr_RFC_valid, tpr_RFC_valid)
+    
+    fpr_DL_train, tpr_DL_train = roc_curve(train_labels, data["DL_train"])
+    fpr_XGB_train, tpr_XGB_train = roc_curve(train_labels, data["XGB_train"])
+    fpr_RFC_train, tpr_RFC_train = roc_curve(train_labels, data["RFC_train"])
+    
+    auc_DL_train = auc_from_roc(fpr_DL_train, tpr_DL_train)
+    auc_XGB_train = auc_from_roc(fpr_XGB_train, tpr_XGB_train)
+    auc_RFC_train = auc_from_roc(fpr_RFC_train, tpr_RFC_train)
+    
+    ret_aucs = {
+        "DL_valid": auc_DL_valid,
+        "XGB_valid": auc_XGB_valid,
+        "RFC_valid": auc_RFC_valid,
+        "DL_train": auc_DL_train,
+        "XGB_train": auc_XGB_train,
+        "RFC_train": auc_RFC_train
+    }
+    
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 4), sharey=False)
+    
+    ax1.plot(fpr_DL_valid, tpr_DL_valid, c='k', label="DL ROC curve", linewidth=2)
+    ax1.plot(fpr_XGB_valid, tpr_XGB_valid, c='r', label="XGB ROC curve", linewidth=2)
+    ax1.plot(fpr_RFC_valid, tpr_RFC_valid, c='b', label="RFC ROC curve", linewidth=2)
+    
+    ax1.legend(loc='best')
+    ax1.set_title("ROC curves for the validation set")
+    ax1.set_xlabel("False positive rate")
+    ax1.set_ylabel("True positive rate")
+    ax1.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    
+    ax2.plot(fpr_DL_train, tpr_DL_train, c='k', label="DL ROC curve", linewidth=2)
+    ax2.plot(fpr_XGB_train, tpr_XGB_train, c='r', label="XGB ROC curve", linewidth=2)
+    ax2.plot(fpr_RFC_train, tpr_RFC_train, c='b', label="RFC ROC curve", linewidth=2)
+    
+    ax2.legend(loc='best')
+    ax2.set_title("ROC curves for the training set")
+    ax2.set_xlabel("False positive rate")
+    ax2.set_ylabel("True positive rate")
+    ax2.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+    
+    plt.show()
+    
+    return ret_aucs
+    
     
 
 
