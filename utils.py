@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import importlib.util
 import json, glob
 from tqdm import tqdm
+from sklearn.linear_model import LogisticRegression
+from sklearn.isotonic import IsotonicRegression
+from sklearn.metrics import log_loss, brier_score_loss
+from torch.nn import Sigmoid
 
 data_dir = str(Path(__file__).resolve().parent)
 
@@ -335,6 +339,16 @@ def plot_roc_curves(data, valid_labels, train_labels):
     
     return ret_aucs
 
+def platt(y_true, p_pred, logits=True):
+    if not logits:
+        eps = 1e-6
+        p_pred = np.clip(p_pred, eps, 1 - eps)
+        p_pred = np.log(p_pred / (1 - p_pred))
+
+    p_pred = p_pred.reshape(-1, 1)
+    lr = LogisticRegression(max_iter=1000).fit(p_pred, y_true)
+    return lr.predict_proba(p_pred)[:, 1]
+
 def expected_calibration_error(y_true, p_pred, n_bins=20, logits=True):
     if logits:
         p_pred = torch.nn.Sigmoid()(torch.tensor(p_pred)).numpy()
@@ -353,7 +367,39 @@ def expected_calibration_error(y_true, p_pred, n_bins=20, logits=True):
         w = mask.mean()
         ece += w * abs(acc - conf)
     return ece
+
+def model_calibration_df(y_true, p_pred, logits=True):
+    y_true = np.array(y_true)
+    r = 5
     
+    if logits:
+        p_pred = Sigmoid()(torch.tensor(p_pred)).numpy()
+    
+    auc_norm = round(auc(y_true, p_pred), r)
+    ece_norm = round(expected_calibration_error(y_true, p_pred, logits=False), r)
+    logl_norm = round(log_loss(y_true, p_pred), r)
+    brier_norm = round(brier_score_loss(y_true, p_pred), r)
+    norm_scores = [auc_norm, ece_norm, logl_norm, brier_norm]
+
+    iso = IsotonicRegression(out_of_bounds="clip")
+    iso.fit(p_pred, y_true)
+    p_iso = iso.transform(p_pred)
+    auc_iso = round(auc(y_true, p_iso), r)
+    ece_iso = round(expected_calibration_error(y_true, p_iso, logits=False), r)
+    logl_iso = round(log_loss(y_true, p_iso), r)
+    brier_iso = round(brier_score_loss(y_true, p_iso), r)
+    iso_scores = [auc_iso, ece_iso, logl_iso, brier_iso]
+
+    p_platt = platt(y_true, p_pred, logits=False)
+    auc_platt = round(auc(y_true, p_platt), r)
+    ece_platt = round(expected_calibration_error(y_true, p_platt, logits=False), r)
+    logl_platt = round(log_loss(y_true, p_platt), r)
+    brier_platt = round(brier_score_loss(y_true, p_platt), r)
+    platt_scores = [auc_platt, ece_platt, logl_platt, brier_platt]
+    
+    ret = pd.DataFrame([norm_scores, iso_scores, platt_scores], columns=["AUC", "ECE", "log_loss", "brier_loss"], index=["original", "isotonic", "platt"])
+    
+    return ret
     
 
 
