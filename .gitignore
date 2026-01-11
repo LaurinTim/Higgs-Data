@@ -1,5 +1,4 @@
-__pycache__/
-.ipynb_checkpoints/
 HIGGS/EarlyStopping model/
 SUSY/EarlyStopping model/
-__pycache__
+/.ipynb_checkpoints
+/__pycache__
