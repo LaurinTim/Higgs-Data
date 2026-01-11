@@ -400,54 +400,6 @@ def model_calibration_df(y_true, p_pred, logits=True):
     ret = pd.DataFrame([norm_scores, iso_scores, platt_scores], columns=["AUC", "ECE", "log_loss", "brier_loss"], index=["original", "isotonic", "platt"])
     
     return ret
-
-def platt2(y_train, y_test, p_train, p_test, logits=True):
-    if not logits:
-        eps = 1e-6
-        p_train = np.clip(p_train, eps, 1 - eps)
-        p_train = np.log(p_train / (1 - p_train))
-        p_test = np.clip(p_test, eps, 1 - eps)
-        p_test = np.log(p_test / (1 - p_test))
-
-    p_train = p_train.reshape(-1, 1)
-    p_test = p_test.reshape(-1, 1)
-    lr = LogisticRegression(max_iter=1000).fit(p_train, y_train)
-    return lr.predict_proba(p_test)[:, 1]
-
-def model_calibration_df2(y_train, y_test, p_train, p_test, logits=True):
-    y_train = np.array(y_train)
-    y_test = np.array(y_test)
-    r = 5
-    
-    if logits:
-        p_train = Sigmoid()(torch.tensor(p_train)).numpy()
-        p_test = Sigmoid()(torch.tensor(p_test)).numpy()
-    
-    auc_norm = round(auc(y_test, p_test), r)
-    ece_norm = round(expected_calibration_error(y_test, p_test, logits=False), r)
-    logl_norm = round(log_loss(y_test, p_test), r)
-    brier_norm = round(brier_score_loss(y_test, p_test), r)
-    norm_scores = [auc_norm, ece_norm, logl_norm, brier_norm]
-
-    iso = IsotonicRegression(out_of_bounds="clip")
-    iso.fit(p_train, y_train)
-    p_iso = iso.transform(p_test)
-    auc_iso = round(auc(y_test, p_iso), r)
-    ece_iso = round(expected_calibration_error(y_test, p_iso, logits=False), r)
-    logl_iso = round(log_loss(y_test, p_iso), r)
-    brier_iso = round(brier_score_loss(y_test, p_iso), r)
-    iso_scores = [auc_iso, ece_iso, logl_iso, brier_iso]
-
-    p_platt = platt2(y_train, y_test, p_train, p_test, logits=False)
-    auc_platt = round(auc(y_test, p_platt), r)
-    ece_platt = round(expected_calibration_error(y_test, p_platt, logits=False), r)
-    logl_platt = round(log_loss(y_test, p_platt), r)
-    brier_platt = round(brier_score_loss(y_test, p_platt), r)
-    platt_scores = [auc_platt, ece_platt, logl_platt, brier_platt]
-    
-    ret = pd.DataFrame([norm_scores, iso_scores, platt_scores], columns=["AUC", "ECE", "log_loss", "brier_loss"], index=["original", "isotonic", "platt"])
-    
-    return ret
     
 
 
