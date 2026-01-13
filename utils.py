@@ -10,6 +10,7 @@ from tqdm import tqdm
 from sklearn.linear_model import LogisticRegression
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import log_loss, brier_score_loss
+from sklearn.metrics import roc_curve as sklearn_roc_curve
 from torch.nn import Sigmoid
 
 data_dir = str(Path(__file__).resolve().parent)
@@ -400,7 +401,101 @@ def model_calibration_df(y_true, p_pred, logits=True):
     ret = pd.DataFrame([norm_scores, iso_scores, platt_scores], columns=["AUC", "ECE", "log_loss", "brier_loss"], index=["original", "isotonic", "platt"])
     
     return ret
+
+def calculate_asimov_significance(s, b, sigma_b):
+    """
+    Calculates the Asimov discovery significance (Z_A).
     
+    Parameters:
+        s (float or np.array): Expected signal events.
+        b (float or np.array): Expected background events.
+        sigma_b (float or np.array): Systematic uncertainty on background events.
+        
+    Returns:
+        Z (float or np.array): Significance in sigmas.
+    """
+    # Initialize Z as zeros
+    if np.isscalar(b):
+        if b <= 0 or sigma_b <= 0:
+            return s / np.sqrt(b) if b > 0 else 0.0
+    
+    # Calculate terms with safe division for arrays
+    # Always use at least b=1 to avoid spikes in the significance for high thresholds
+    b_safe = np.maximum(b, 1) #np.maximum(b, 1e-9)
+    # Add small epsilon to avoid division by 0 if sigma_b is very small
+    sigma_b_safe = np.maximum(sigma_b, 1e-9) 
+    
+    term1 = (s + b_safe) * np.log(
+        ((s + b_safe) * (b_safe + sigma_b_safe**2)) / 
+        (b_safe**2 + (s + b_safe) * sigma_b_safe**2)
+    )
+    term2 = (b_safe**2 / sigma_b_safe**2) * np.log(
+        1 + (sigma_b_safe**2 * s) / (b_safe * (b_safe + sigma_b_safe**2))
+    )
+    
+    # Z squared
+    Z2 = 2 * (term1 - term2)
+    
+    # Handle potential negative values due to precision issues near zero
+    Z = np.sqrt(np.maximum(Z2, 0))
+    
+    return Z
+
+def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, logits=False):
+    """
+    Scans all thresholds to find the one that maximizes discovery significance.
+    
+    Parameters:
+        y_true (array-like): Ground truth labels (1 for signal, 0 for background).
+        y_pred (array-like): Classifier probability scores.
+        weight_s (float): Total expected signal events (Default: 100).
+        weight_b (float): Total expected background events (Default: 1000).
+        sys_uncertainty (float): Relative systematic uncertainty (Default: 0.05).
+        logits (bool): Whether the predicted values are given as logits (Defauls: False).
+        
+    Returns:
+        results (dict): Dictionary containing max significance, optimal threshold, etc.
+    """
+    # If the predicted values are logits, convert them to probabilities with the Sigmoid function
+    if logits:
+        y_pred = Sigmoid()(torch.tensor(y_pred)).numpy()
+    
+    # 1. Compute ROC curve to get efficiency (tpr) and rejection (1-fpr) at all thresholds
+    # fpr = False Positive Rate (Background Efficiency)
+    # tpr = True Positive Rate (Signal Efficiency)
+    fpr, tpr, thresholds = sklearn_roc_curve(y_true, y_pred)
+    
+    # 2. Scale efficiencies to event counts
+    # s = Total Signal * Signal Efficiency
+    s_counts = weight_s * tpr
+    
+    # b = Total Background * Background Efficiency
+    b_counts = weight_b * fpr
+    
+    # 3. Calculate systematic uncertainty for each point
+    # sigma_b = b * 5%
+    sigma_b_counts = b_counts * sys_uncertainty
+    
+    # 4. Calculate significance for all thresholds at once
+    significances = calculate_asimov_significance(s_counts, b_counts, sigma_b_counts)
+    
+    # 5. Find the maximum
+    best_idx = np.argmax(significances)
+    max_sig = significances[best_idx]
+    best_threshold = thresholds[best_idx]
+    
+    # Corresponding signal and background events at this threshold
+    best_s = s_counts[best_idx]
+    best_b = b_counts[best_idx]
+    
+    return {
+        "max_significance": max_sig,
+        "optimal_threshold": best_threshold,
+        "signal_events": best_s,
+        "background_events": best_b,
+        "significances": significances,
+        "thresholds": thresholds
+    }
 
 
 
