@@ -411,7 +411,7 @@ def calculate_asimov_significance(s, b, sigma_b, b_min=1):
         s (float or np.array): Expected signal events.
         b (float or np.array): Expected background events.
         sigma_b (float or np.array): Systematic uncertainty on background events.
-        min_b (float): Minimum number of background events when calculating the asimov significance.
+        b_min (float): Minimum number of background events when calculating the asimov significance.
         
     Returns:
         Z (float or np.array): Significance in sigmas.
@@ -443,7 +443,7 @@ def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     
     return Z
 
-def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, min_b=1, logits=False):
+def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1, logits=False):
     """
     Scans all thresholds to find the one that maximizes discovery significance.
     
@@ -453,7 +453,7 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
         weight_s (float): Total expected signal events (Default: 100).
         weight_b (float): Total expected background events (Default: 1000).
         sys_uncertainty (float): Relative systematic uncertainty (Default: 0.05).
-        min_b (float): Minimum number of background events when calculating the asimov significance.
+        b_min (float): Minimum number of background events when calculating the asimov significance.
         logits (bool): Whether the predicted values are given as logits (Defauls: False).
         
     Returns:
