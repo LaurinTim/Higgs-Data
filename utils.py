@@ -403,7 +403,7 @@ def model_calibration_df(y_true, p_pred, logits=True):
     
     return ret
 
-def calculate_asimov_significance(s, b, sigma_b):
+def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     """
     Calculates the Asimov discovery significance (Z_A).
     
@@ -411,6 +411,7 @@ def calculate_asimov_significance(s, b, sigma_b):
         s (float or np.array): Expected signal events.
         b (float or np.array): Expected background events.
         sigma_b (float or np.array): Systematic uncertainty on background events.
+        min_b (float): Minimum number of background events when calculating the asimov significance.
         
     Returns:
         Z (float or np.array): Significance in sigmas.
@@ -421,8 +422,8 @@ def calculate_asimov_significance(s, b, sigma_b):
             return s / np.sqrt(b) if b > 0 else 0.0
     
     # Calculate terms with safe division for arrays
-    # Always use at least b=1 to avoid spikes in the significance for high thresholds
-    b_safe = np.maximum(b, 1) #np.maximum(b, 1e-9)
+    # Always use at least b=b_min to avoid spikes in the significance for high thresholds
+    b_safe = np.maximum(b, b_min) #np.maximum(b, 1e-9)
     # Add small epsilon to avoid division by 0 if sigma_b is very small
     sigma_b_safe = np.maximum(sigma_b, 1e-9) 
     
@@ -442,7 +443,7 @@ def calculate_asimov_significance(s, b, sigma_b):
     
     return Z
 
-def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, logits=False):
+def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, min_b=1, logits=False):
     """
     Scans all thresholds to find the one that maximizes discovery significance.
     
@@ -452,6 +453,7 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
         weight_s (float): Total expected signal events (Default: 100).
         weight_b (float): Total expected background events (Default: 1000).
         sys_uncertainty (float): Relative systematic uncertainty (Default: 0.05).
+        min_b (float): Minimum number of background events when calculating the asimov significance.
         logits (bool): Whether the predicted values are given as logits (Defauls: False).
         
     Returns:
@@ -478,7 +480,7 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
     sigma_b_counts = b_counts * sys_uncertainty
     
     # 4. Calculate significance for all thresholds at once
-    significances = calculate_asimov_significance(s_counts, b_counts, sigma_b_counts)
+    significances = calculate_asimov_significance(s_counts, b_counts, sigma_b_counts, b_min=b_min)
     
     # 5. Find the maximum
     best_idx = np.argmax(significances)
