@@ -282,7 +282,7 @@ def get_SUSY_pred():
     #                             axis=0, ignore_index=True).to_numpy().reshape(-1)
     
     ret["RFC_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_best.csv").to_numpy().reshape(-1)
-    ret["RFC_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_best.csv").to_numpy().reshape(-1)
+    ret["RFC_train"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_best.csv").to_numpy().reshape(-1)
     #ret["RFC_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part1_best.csv"), 
     #                             pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part2_best.csv")], 
     #                             axis=0, ignore_index=True).to_numpy().reshape(-1)
