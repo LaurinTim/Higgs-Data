@@ -209,7 +209,6 @@ def roc_curve(y, p):
     sorted_y = y[desc_score_indices]
     sorted_p = p[desc_score_indices]
 
-    
     tp = np.cumsum(sorted_y)
     fp = np.cumsum(~sorted_y)
     
@@ -272,19 +271,21 @@ def get_SUSY_pred():
     ret = dict()
     
     ret["DL_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\DL_prediction_best.csv").to_numpy().reshape(-1)
-    ret["DL_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\DL_prediction_train_part1_best.csv"), 
-                                 pd.read_csv(data_dir + "\\SUSY\\predictions\\DL_prediction_train_part2_best.csv")], 
+    ret["DL_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\DL_prediction_best_train_part1.csv"), 
+                                 pd.read_csv(data_dir + "\\SUSY\\predictions\\DL_prediction_best_train_part2.csv")], 
                                  axis=0, ignore_index=True).to_numpy().reshape(-1)
     
     ret["XGB_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_best.csv").to_numpy().reshape(-1)
-    ret["XGB_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_train_part1_best.csv"), 
-                                 pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_train_part2_best.csv")], 
-                                 axis=0, ignore_index=True).to_numpy().reshape(-1)
+    ret["XGB_train"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_train_best.csv").to_numpy().reshape(-1)
+    #ret["XGB_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_train_part1_best.csv"), 
+    #                             pd.read_csv(data_dir + "\\SUSY\\predictions\\XGB_prediction_train_part2_best.csv")], 
+    #                             axis=0, ignore_index=True).to_numpy().reshape(-1)
     
     ret["RFC_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_best.csv").to_numpy().reshape(-1)
-    ret["RFC_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part1_best.csv"), 
-                                 pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part2_best.csv")], 
-                                 axis=0, ignore_index=True).to_numpy().reshape(-1)
+    ret["RFC_valid"] = pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_best.csv").to_numpy().reshape(-1)
+    #ret["RFC_train"] = pd.concat([pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part1_best.csv"), 
+    #                             pd.read_csv(data_dir + "\\SUSY\\predictions\\RFC_prediction_train_part2_best.csv")], 
+    #                             axis=0, ignore_index=True).to_numpy().reshape(-1)
     
     return ret
 
