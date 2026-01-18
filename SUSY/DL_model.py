@@ -229,7 +229,62 @@ deep = Deep(units=2**9, p=0.2)
 wide = Wide()
 model = DeepWide(deep, wide, deep_ratio=0.5)
 
-# %%
+# %% Best model, val AUC 0.87990
+
+class Deep(nn.Module):
+    def __init__(self, units=18, p=0.1):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            u.DenseBlock(18, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.GELU(), p),
+            u.DenseBlock(units, units, nn.Tanh(), p),
+            nn.Linear(units, 1)
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(18, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
+
+deep = Deep(units=2**9, p=0.2)
+wide = Wide()
+model = DeepWide(deep, wide, deep_ratio=0.5)
+
+# %% With hyperparameters for best model
 
 SEED = 0
 torch.manual_seed(SEED)
@@ -246,6 +301,25 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
 lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, 1e-5, -1)
 loss_fn = nn.BCEWithLogitsLoss()
 early_stopping = u.EarlyStopping(patience=10, min_delta=0.000, path='best_model.pth')
+
+# %%
+
+class test(nn.Module):
+    def __init__(self, units=18, p=0.1):
+        super().__init__()
+        self.linear_stack = u.DenseBlock(units, units, nn.GELU(), p)
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+    
+test_model = test(units=2**9, p=0.2)
+
+# %%
+
+from torchinfo import summary
+
+summary(test_model, input_size=(1, 512))
 
 # %%
 
