@@ -500,6 +500,26 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
         "thresholds": thresholds
     }
 
+def plot_sig(ax, sig_DL, sig_XGB, sig_RFC, min_thresh=None):
+    sig = [sig_DL["significances"].copy(), sig_XGB["significances"].copy(), sig_RFC["significances"].copy()]
+    thresh = [sig_DL["thresholds"].copy(), sig_XGB["thresholds"].copy(), sig_RFC["thresholds"].copy()]
+    
+    if min_thresh:
+        for i in range(3):
+            sig[i] = [val for val,bal in zip(sig[i], thresh[i]) if bal>= min_thresh]
+            thresh[i] = [val for val in thresh[i] if val>=min_thresh]
+    
+    ax.plot(thresh[0], sig[0], c='k', label="DL model", linewidth=2)
+    ax.plot(thresh[1], sig[1], c='r', label="XGB model", linewidth=2)
+    ax.plot(thresh[2], sig[2], c='b', label="RFC model", linewidth=2)
+
+    ax.legend(loc="best")
+    ax.set_title("Asimov Discovery Significances at different Thresholds")
+    ax.set_xlabel("Threshold")
+    ax.set_ylabel("Discovery Significance")
+    
+    return ax
+    
 
 
 
