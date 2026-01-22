@@ -516,7 +516,7 @@ def plot_sig(ax, sig_DL, sig_XGB, sig_RFC, min_thresh=None):
     ax.legend(loc="best")
     ax.set_title("Asimov Discovery Significances at different Thresholds")
     ax.set_xlabel("Threshold")
-    ax.set_ylabel("Discovery Significance")
+    ax.set_ylabel("Discovery Significance [σ]")
     
     return ax
     
