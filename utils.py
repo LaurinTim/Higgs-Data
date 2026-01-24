@@ -492,13 +492,43 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
     best_b = b_counts[best_idx]
     
     return {
-        "max_significance": max_sig,
         "optimal_threshold": best_threshold,
+        "max_significance": max_sig,
         "signal_events": best_s,
         "background_events": best_b,
         "significances": significances,
         "thresholds": thresholds
     }
+
+def asimov_discovery_sig_model_performance(y_true, y_preds, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1):
+    DL_preds = Sigmoid()(torch.tensor(y_preds["DL_valid"].copy())).numpy()
+    XGB_preds = y_preds["XGB_valid"].copy()
+    RFC_preds = y_preds["RFC_valid"].copy()
+    
+    DL_sig = find_optimal_threshold(y_true, DL_preds, weight_s=weight_s, weight_b=weight_b, sys_uncertainty=sys_uncertainty, b_min=b_min)
+    XGB_sig = find_optimal_threshold(y_true, XGB_preds, weight_s=weight_s, weight_b=weight_b, sys_uncertainty=sys_uncertainty, b_min=b_min)
+    RFC_sig = find_optimal_threshold(y_true, RFC_preds, weight_s=weight_s, weight_b=weight_b, sys_uncertainty=sys_uncertainty, b_min=b_min)
+    
+    df = pd.DataFrame({"DL": DL_sig, "XGB": XGB_sig, "RFC": RFC_sig}).T
+    df.index.name = "Model"
+    df = df.drop(columns=["significances", "thresholds"])
+    df = df.apply(pd.to_numeric, errors="coerce")
+    df = df.rename(columns={
+            "optimal_threshold": "Best Threshold",
+            "max_significance": "Discovery Significance [σ]",
+            "signal_events": "Signal Events",
+            "background_events": "Background Events"
+        })
+    
+    #df["True Positive Rate"] = df["Signal Events"]/100
+    #df["False Positive Rate"] = df["Background Events"]/1000
+    
+    df = df.round(2)
+    
+    df["True Positive Percentage"] = df["Signal Events"].apply(lambda x: str(round(x/weight_s * 100, 1)) + "%")
+    df["False Positive Percentage"] = df["Background Events"].apply(lambda x: str(round(x/weight_b * 100, 1)) + "%")
+        
+    return df, (DL_sig, XGB_sig, RFC_sig)
 
 def plot_sig(ax, sig_DL, sig_XGB, sig_RFC, min_thresh=None):
     sig = [sig_DL["significances"].copy(), sig_XGB["significances"].copy(), sig_RFC["significances"].copy()]
