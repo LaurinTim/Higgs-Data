@@ -31,8 +31,16 @@ def accuracy(corr, pred):
 def round_sig(x, sig=3):
     if isinstance(x, pd.Series):
         x = x.astype(float).to_numpy()
+        x[x <= 0] = 1e-8
+    elif x <= 0:
+        return 0
     mags = 10 ** (sig - 1 - np.floor(np.log10(x)))
-    return np.round(x*mags) / mags
+    ret = np.round(x*mags) / mags
+    if isinstance(ret, np.ndarray):
+        ret[ret == 1e-8] = 0
+    elif ret == 1e-8:
+        ret=0
+    return ret
 
 def get_HIGGS_labels():
     train_files = tf.io.gfile.glob(data_dir + '\\HIGGS\\HIGGS data\\training' + '\\*.tfrecord')
