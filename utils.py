@@ -497,7 +497,9 @@ def find_optimal_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_unce
         "signal_events": best_s,
         "background_events": best_b,
         "significances": significances,
-        "thresholds": thresholds
+        "thresholds": thresholds,
+        "true_positive_rates": tpr,
+        "false_positive_rates": fpr
     }
 
 def asimov_discovery_sig_model_performance(y_true, y_preds, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1):
@@ -511,7 +513,7 @@ def asimov_discovery_sig_model_performance(y_true, y_preds, weight_s=100, weight
     
     df = pd.DataFrame({"DL": DL_sig, "XGB": XGB_sig, "RFC": RFC_sig}).T
     df.index.name = "Model"
-    df = df.drop(columns=["significances", "thresholds"])
+    df = df.drop(columns=["significances", "thresholds", "true_positive_rates", "false_positive_rates"])
     df = df.apply(pd.to_numeric, errors="coerce")
     df = df.rename(columns={
             "optimal_threshold": "Best Threshold",
