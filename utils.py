@@ -437,10 +437,15 @@ def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     
     # Calculate terms with safe division for arrays
     # Always use at least b=b_min to avoid spikes in the significance for high thresholds
-    b_min = np.maximum(b_min, 1e-10)
     b_safe = np.maximum(b, b_min) #np.maximum(b, 1e-9)
+    
+    if np.max(sigma_b) == 0:
+        term = 2*((s + b_safe) * np.log(1 + s / b_safe) - s)
+        Z = np.sqrt(np.maximum(term, 0))
+        return Z
+    
     # Add small epsilon to avoid division by 0 if sigma_b is very small
-    sigma_b_safe = np.maximum(sigma_b, 1e-9) 
+    sigma_b_safe = np.maximum(sigma_b, 1e-9)
     
     term1 = (s + b_safe) * np.log(
         ((s + b_safe) * (b_safe + sigma_b_safe**2)) / 
