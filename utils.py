@@ -28,6 +28,12 @@ sspec.loader.exec_module(us)
 def accuracy(corr, pred):
     return 1 - np.sum(np.abs(corr - pred))/len(corr)
 
+def round_sig(x, sig=3):
+    if isinstance(x, pd.Series):
+        x = x.astype(float).to_numpy()
+    mags = 10 ** (sig - 1 - np.floor(np.log10(x)))
+    return np.round(x*mags) / mags
+
 def get_HIGGS_labels():
     train_files = tf.io.gfile.glob(data_dir + '\\HIGGS\\HIGGS data\\training' + '\\*.tfrecord')
     valid_files = tf.io.gfile.glob(data_dir + '\\HIGGS\\HIGGS data\\validation' + '\\*.tfrecord')
@@ -522,14 +528,12 @@ def asimov_discovery_sig_model_performance(y_true, y_preds, weight_s=100, weight
             "background_events": "Background Events"
         })
     
-    #df["True Positive Rate"] = df["Signal Events"]/100
-    #df["False Positive Rate"] = df["Background Events"]/1000
+    df["True Positive Percentage"] = df["Signal Events"].apply(lambda x: str(round_sig(x/weight_s * 100)) + "%")
+    df["False Positive Percentage"] = df["Background Events"].apply(lambda x: str(round_sig(x/weight_b * 100)) + "%")
     
-    df = df.round(2)
+    num_cols = df.select_dtypes(include="number").columns
+    df[num_cols] = df[num_cols].apply(round_sig)
     
-    df["True Positive Percentage"] = df["Signal Events"].apply(lambda x: str(round(x/weight_s * 100, 1)) + "%")
-    df["False Positive Percentage"] = df["Background Events"].apply(lambda x: str(round(x/weight_b * 100, 1)) + "%")
-        
     return df, (DL_sig, XGB_sig, RFC_sig)
 
 def plot_sig(ax, sig_DL, sig_XGB, sig_RFC, min_thresh=None):
