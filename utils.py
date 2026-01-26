@@ -571,7 +571,39 @@ def plot_sig(ax, sig_DL, sig_XGB, sig_RFC, min_thresh=None):
     return ax
     
 
+def plot_HIGGS_SUSY_roc_curves(HIGGS_data, SUSY_data, HIGGS_valid_labels, SUSY_valid_labels, fpr_lim=None):
+    HIGGS_fpr, HIGGS_tpr = roc_curve(HIGGS_valid_labels, HIGGS_data)
+    SUSY_fpr, SUSY_tpr = roc_curve(SUSY_valid_labels, SUSY_data)
+    
+    HIGGS_auc = auc_from_roc(HIGGS_fpr, HIGGS_tpr)
+    SUSY_auc = auc_from_roc(SUSY_fpr, SUSY_tpr)
+    
+    ret_aucs = {
+        "HIGGS": HIGGS_auc,
+        "SUSY": SUSY_auc
+    }
 
+    if fpr_lim:
+        HIGGS_fpr = HIGGS_fpr[HIGGS_fpr <= fpr_lim]
+        HIGGS_tpr = HIGGS_tpr[:len(HIGGS_fpr)]
+        
+        SUSY_fpr = SUSY_fpr[SUSY_fpr <= fpr_lim]
+        SUSY_tpr = SUSY_tpr[:len(SUSY_fpr)]
+    
+    fig, ax = plt.subplots(figsize=(7, 4), sharey=False)
+    
+    ax.plot(HIGGS_fpr, HIGGS_tpr, c='k', label="HIGGS ROC curve", linewidth=2)
+    ax.plot(SUSY_fpr, SUSY_tpr, c='r', label="SUSY ROC curve", linewidth=2)
+    
+    ax.legend(loc='best')
+    ax.set_title("ROC curves")
+    ax.set_xlabel("False positive rate")
+    ax.set_ylabel("True positive rate")
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+
+    plt.show()
+    
+    return ret_aucs, HIGGS_tpr, HIGGS_fpr, SUSY_tpr, SUSY_fpr
 
 
 
