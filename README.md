@@ -73,9 +73,12 @@ We can clearly see that the ROC curves follow the expected patterns.
 
 
 ## References
+
 <a id="ref1"></a>
 [1]: Baldi, P. and Sadowski, P. and Whiteson, D., Nature Communications, 2014, *Searching for exotic particles in high-energy physics with deep learning*, http://dx.doi.org/10.1038/ncomms5308.
+
 <a id="ref2"></a>
 [2]: Heng-Tze Cheng and Levent Koc and Jeremiah Harmsen and Tal Shaked and Tushar Chandra and Hrishi Aradhye and Glen Anderson and Greg Corrado and Wei Chai and Mustafa Ispir and Rohan Anil and Zakaria Haque and Lichan Hong and Vihan Jain and Xiaobing Liu and Hemal Shah, 2016, *Wide & Deep Learning for Recommender Systems*, https://arxiv.org/abs/1606.07792.
+
 <a id="ref3"></a>
 [3]: Adam Elwood and Dirk Krücker, 2018, *Direct optimisation of the discovery significance when training neural networks to search for new physics in particle colliders*, https://arxiv.org/abs/1806.00322.
