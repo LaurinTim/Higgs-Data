@@ -16,7 +16,7 @@ Three different kinds of models are trained for each dataset: A *Random Forest C
 
 The performance of the models is measured with the *Area under the ROC curve* $K$ during training. The performances of the models are compared for both datasets. 
 
-The *Asimov discovery significance* $Z$ [3](#ref3) is also calculated for the models after training for each dataset. To calculate $Z$, the values from [1](#ref1) are used, so for $100$ signal and $1000\pm50$ background events. These results are then compared to the results in [1](#ref1).
+The *Asimov discovery significance* $Z$, as seen in [Elwood and Krücker, 2018](#ref3), is also calculated for the models after training for each dataset. To calculate $Z$, the values from [1](#ref1) are used, so for $100$ signal and $1000\pm50$ background events. These results are then compared to the results in [1](#ref1).
 
 ## Results
 
