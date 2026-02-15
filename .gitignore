@@ -4,3 +4,4 @@ __pycache__/
 .ipynb_checkpoints/
 HIGGS/__pycache__/
 SUSY/__pycache__/
+.venv/
