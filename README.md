@@ -1,6 +1,8 @@
+Example citation [4](#ref1).
+
 # HIGGS and SUSY Data Analysis
 
-In this repository, the [HIGGS](https://archive.ics.uci.edu/dataset/280/higgs) and [SUSY](https://archive.ics.uci.edu/dataset/279/susy) datasets were analyzed. They both contain data produced using Monce Carlo simulations, where the goal is to train a classifier to find signals in the data. This was originally done by Baldi (2014) [1].
+In this repository, the [HIGGS](https://archive.ics.uci.edu/dataset/280/higgs) and [SUSY](https://archive.ics.uci.edu/dataset/279/susy) datasets were analyzed. They both contain data produced using Monce Carlo simulations, where the goal is to train a classifier to find signals in the data. This was originally done in [Baldi et al., 2014][1].
 
 A more in depth presentation of the whole analysis can be seen in the *main.ipynb* notebook. A short summary of the results is presented in this README.
 
@@ -79,3 +81,5 @@ We can clearly see that the ROC curves follow the expected patterns.
 [2]: Heng-Tze Cheng and Levent Koc and Jeremiah Harmsen and Tal Shaked and Tushar Chandra and Hrishi Aradhye and Glen Anderson and Greg Corrado and Wei Chai and Mustafa Ispir and Rohan Anil and Zakaria Haque and Lichan Hong and Vihan Jain and Xiaobing Liu and Hemal Shah, 2016, *Wide & Deep Learning for Recommender Systems*, https://arxiv.org/abs/1606.07792.
 
 [3]: Adam Elwood and Dirk Krücker, 2018, *Direct optimisation of the discovery significance when training neural networks to search for new physics in particle colliders*, https://arxiv.org/abs/1806.00322.
+<a id="ref1"></a>
+[4]: Baldi, P. and Sadowski, P. and Whiteson, D., Nature Communications, 2014, *Searching for exotic particles in high-energy physics with deep learning*, http://dx.doi.org/10.1038/ncomms5308.
