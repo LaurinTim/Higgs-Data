@@ -12,7 +12,11 @@ The SUSY dataset consists of 5'000'000 samples, where again the last 500'000 are
 
 ## Analysis Process
 
-Three different kinds of models are trained for each dataset: A *Random Forest Classifier* $RFC$, an XGBoost model $XGB$, and a *Deep and Wide* $DL$ model [2]. The performance of the models is measured with the *Area under the ROC curve* $K$ during training. The performances of the models are compared for both datasets. The *Asimov discovery significance* $Z$ [3] is also calculated for the models after training for each dataset. To calculate $Z$, the values from [1] are used, so for $100$ signal and $1000\pm50$ background events. These results are then compared to the results in [1].
+Three different kinds of models are trained for each dataset: A *Random Forest Classifier* $RFC$, an XGBoost model $XGB$, and a *Deep and Wide* $DL$ model [2]. 
+
+The performance of the models is measured with the *Area under the ROC curve* $K$ during training. The performances of the models are compared for both datasets. 
+
+The *Asimov discovery significance* $Z$ [3] is also calculated for the models after training for each dataset. To calculate $Z$, the values from [1] are used, so for $100$ signal and $1000\pm50$ background events. These results are then compared to the results in [1].
 
 ## Results
 
@@ -42,17 +46,25 @@ The results of the three models for the HIGGS train- and validation set can be s
 
 $RFC_H$ performs the worst and $DL_H$ the best by a significant margin. This can be observed because the relations between the features relevant for finding signals are too complex to be picked up by the $RFC$ and $XGB$ models.
 
-We can now compare the results of $DL_H$ to the best performing model in [1] $DN_H$. $DN_H$ reaches an AUC of $K_H^{DN}=0.885$, which is lower than the AUC of $DL_H$ at $K_H^{DL}=0.893$, but only by a very slight margin. We can see a much larger improvement in the ADS, where $DN_H$ reaches a value of $Z_H^{DN}=5.0\sigma$, while $DL_H$ gets to $Z_H^{DL}=7.0\sigma$. The AUC is calculated over all false positive rates, while the ADS only uses the optimal one for our numbers of signal and background events. Since we assume a ratio of around $10$ between the background and signal events, only the performance of the model at low false positive rates is actually relevant when we try to maximize the discovery significance. Since $DL_H$ reaches a significantly higher true positive rates at a low false positive rate when compared to $DN_H$, and later the two models perform similarly, the difference between $Z_H^{DL}$ and $Z_H^{DN}$ is much larger than between $K_H^{DL}$ and $K_H^{DN}$. The ideal values for $Z_H^{DL}$ are found at a threshold of $0.950$, where the true positive rate is $27.0\%$ and the false positive rate $0.773\%$.
+We can now compare the results of $DL_H$ to the best performing model in [1] $DN_H$. $DN_H$ reaches an AUC of $K_H^{DN}=0.885$, which is lower than the AUC of $DL_H$ at $K_H^{DL}=0.893$, but only by a very slight margin. We can see a much larger improvement in the ADS, where $DN_H$ reaches a value of $Z_H^{DN}=5.0\sigma$, while $DL_H$ gets to $Z_H^{DL}=7.0\sigma$. 
+
+The AUC is calculated over all false positive rates, while the ADS only uses the optimal one for our numbers of signal and background events. Since we assume a ratio of around $10$ between the background and signal events, only the performance of the model at low false positive rates is actually relevant when we try to maximize the discovery significance. Since $DL_H$ reaches a significantly higher true positive rates at a low false positive rate when compared to $DN_H$, and later the two models perform similarly, the difference between $Z_H^{DL}$ and $Z_H^{DN}$ is much larger than between $K_H^{DL}$ and $K_H^{DN}$. 
+
+The ideal values for $Z_H^{DL}$ are found at a threshold of $0.950$, where the true positive rate is $27.0\%$ and the false positive rate $0.773\%$.
 
 ### SUSY Dataset
 
 The performance of the models on the validation set is very similar for both the AUC and ADS, but $DL_S$ narrowly performs the best, while $RFC_S$ performs the worst.
 
-We can again compare the results of $DL_S$ to the best performing model in [1]  $DN_S$. $DN_S$ reaches an AUC of $K_S^{DN}=0.879$, which is practically identical to the AUC of $DL_S$ at $K_S^{DL}=0.880$. We can see a much larger improvement in the ADS, where $DN_S$ reaches a value of $Z_S^{DN}=7.6\sigma$, while $DL_H$ gets to $Z_S^{DL}=11\sigma$. The reason for this is again the same as for the HIGGS dataset, resulting in the difference between $Z_S^{DL}$ and $Z_S^{DN}$ being much larger than between $K_S^{DL}$ and $K_S^{DN}$. The ideal values for $Z_S^{DL}$ are found at a threshold of $0.988$, where the true positive rate is $20.9\%$ and the false positive rate $0.0414\%$.
+We can again compare the results of $DL_S$ to the best performing model in [1]  $DN_S$. $DN_S$ reaches an AUC of $K_S^{DN}=0.879$, which is practically identical to the AUC of $DL_S$ at $K_S^{DL}=0.880$. We can see a much larger improvement in the ADS, where $DN_S$ reaches a value of $Z_S^{DN}=7.6\sigma$, while $DL_H$ gets to $Z_S^{DL}=11\sigma$. The reason for this is again the same as for the HIGGS dataset, resulting in the difference between $Z_S^{DL}$ and $Z_S^{DN}$ being much larger than between $K_S^{DL}$ and $K_S^{DN}$. 
+
+The ideal values for $Z_S^{DL}$ are found at a threshold of $0.988$, where the true positive rate is $20.9\%$ and the false positive rate $0.0414\%$.
 
 ### Comparing HIGGS to SUSY Results
 
-An interesting observation between the results for $DL_H$ and $DL_S$ is, that $K_H^{DL}$ is larger than $K_S^{DL}$ while $Z_S^{DL}$ is larger than $Z_H^{DL}$. The reason for this is again, that only the region of the ROC curve at low false positive rates is relevant for the ADS. We would expect the ROC curve for $DL_S$ to be higher at low false positive rates than for $DL_H$, and lower at high false positive rates. The ROC curves for $DL_H$ and $DL_S$ can be seen below.
+An interesting observation between the results for $DL_H$ and $DL_S$ is, that $K_H^{DL}$ is larger than $K_S^{DL}$ while $Z_S^{DL}$ is larger than $Z_H^{DL}$. The reason for this is again, that only the region of the ROC curve at low false positive rates is relevant for the ADS. 
+
+We would expect the ROC curve for $DL_S$ to be higher at low false positive rates than for $DL_H$, and lower at high false positive rates. The ROC curves for $DL_H$ and $DL_S$ can be seen below.
 
 ![ROC Curves](assets/ROC_HIGGS_SUSY.png)
 
