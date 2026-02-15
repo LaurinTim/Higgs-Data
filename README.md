@@ -6,9 +6,9 @@ A more in depth presentation of the whole analysis can be seen in the *main.ipyn
 
 ## Datasets
 
-Both datasets are split in a training and validation set. The HIGGS dataset consists of 11'000'000 samples, where the last 500'000 are used for the validation set. For both the training and validation set, $53\%$ of the sample are signal events, and $47\%$ are background. Each sample has 28 features, 21 of which are kinematic properties measured by the accelerator and seven are functions of the first 21 features [1].
+Both datasets are split in a training and validation set. The HIGGS dataset consists of 11'000'000 samples, where the last 500'000 are used for the validation set. For both the training and validation set, $53$% of the sample are signal events, and $47$% are background. Each sample has 28 features, 21 of which are kinematic properties measured by the accelerator and seven are functions of the first 21 features [1].
 
-The SUSY dataset consists of 5'000'000 samples, where again the last 500'000 are used for the validation set. Both sets have $47\%$ signal and $53\%$ background events. Each sample has 18 features, eight of which are kinematic properties measured by the accelerator and ten are functions of the first 21 features [1].
+The SUSY dataset consists of 5'000'000 samples, where again the last 500'000 are used for the validation set. Both sets have $47$% signal and $53$% background events. Each sample has 18 features, eight of which are kinematic properties measured by the accelerator and ten are functions of the first 21 features [1].
 
 ## Analysis Process
 
@@ -50,7 +50,7 @@ We can now compare the results of $DL_H$ to the best performing model in [1] $DN
 
 The AUC is calculated over all false positive rates, while the ADS only uses the optimal one for our numbers of signal and background events. Since we assume a ratio of around $10$ between the background and signal events, only the performance of the model at low false positive rates is actually relevant when we try to maximize the discovery significance. Since $DL_H$ reaches a significantly higher true positive rates at a low false positive rate when compared to $DN_H$, and later the two models perform similarly, the difference between $Z_H^{DL}$ and $Z_H^{DN}$ is much larger than between $K_H^{DL}$ and $K_H^{DN}$. 
 
-The ideal values for $Z_H^{DL}$ are found at a threshold of $0.950$, where the true positive rate is $27.0\%$ and the false positive rate $0.773\%$.
+The ideal values for $Z_H^{DL}$ are found at a threshold of $0.950$, where the true positive rate is $27.0$% and the false positive rate $0.773$%.
 
 ### SUSY Dataset
 
@@ -58,7 +58,7 @@ The performance of the models on the validation set is very similar for both the
 
 We can again compare the results of $DL_S$ to the best performing model in [1]  $DN_S$. $DN_S$ reaches an AUC of $K_S^{DN}=0.879$, which is practically identical to the AUC of $DL_S$ at $K_S^{DL}=0.880$. We can see a much larger improvement in the ADS, where $DN_S$ reaches a value of $Z_S^{DN}=7.6\sigma$, while $DL_H$ gets to $Z_S^{DL}=11\sigma$. The reason for this is again the same as for the HIGGS dataset, resulting in the difference between $Z_S^{DL}$ and $Z_S^{DN}$ being much larger than between $K_S^{DL}$ and $K_S^{DN}$. 
 
-The ideal values for $Z_S^{DL}$ are found at a threshold of $0.988$, where the true positive rate is $20.9\%$ and the false positive rate $0.0414\%$.
+The ideal values for $Z_S^{DL}$ are found at a threshold of $0.988$, where the true positive rate is $20.9$% and the false positive rate $0.0414$%.
 
 ### Comparing HIGGS to SUSY Results
 
