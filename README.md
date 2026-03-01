@@ -12,7 +12,7 @@ The SUSY dataset consists of 5'000'000 samples, where again the last 500'000 are
 
 ## Analysis Process
 
-Three different kinds of models are trained for each dataset: A *Random Forest Classifier* $RFC$, an XGBoost model $XGB$, and a *Deep and Wide* $DL$ model [2](#ref2). 
+Three different kinds of models are trained for each dataset: A *Random Forest Classifier* $RFC$, an XGBoost model $XGB$, and a *Wide and Deep* $DL$ model [2](#ref2). 
 
 The performance of the models is measured with the *Area under the ROC curve* $K$ during training. The performances of the models are compared for both datasets. 
 
