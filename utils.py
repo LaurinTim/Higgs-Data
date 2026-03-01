@@ -27,7 +27,7 @@ def accuracy(corr, pred):
 
 def round_sig(x, sig=3):
     if isinstance(x, pd.Series):
-        x = x.astype(float).to_numpy()
+        x = x.astype(float).to_numpy().copy()
         x[x <= 0] = 1e-8
     elif x <= 0:
         return 0
@@ -176,6 +176,8 @@ def plot_func(func, x, title, legend, xlabel, ylabel, sci=True):
     if sci:
         ax.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
     
+    ax.grid(alpha=0.3)
+
     plt.show()
     
 def plot_data(x, y, title, legend=None, xlabel=None, ylabel=None, sci=True):
