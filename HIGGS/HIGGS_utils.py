@@ -13,7 +13,7 @@ data_dir = str(Path(__file__).resolve().parent)
 
 class AsimovLoss(nn.Module):
     def __init__(self, s_tot, b_tot, sig_b_tot):
-        super(AsimovLoss, self).__init__()
+        super().__init__()
         self.s_tot = s_tot
         self.b_tot = b_tot
         self.sig_b_tot = sig_b_tot
