@@ -245,6 +245,8 @@ class DenseBlock(nn.Module):
         return logits
     
 def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, valid_ads, n=300) -> None:
+    figsize = (10, 7)
+
     total_epochs = len(valid_loss)
     
     valid_ads_sigs = [val["max_significance"] for val in valid_ads]
@@ -257,7 +259,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
     x_valid = np.linspace(0, total_epochs-1, total_epochs)
 
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(x_train, train_loss_truncated, c='k', linewidth=2, label='Training loss')
     plt.plot(x_valid, valid_loss, c='r', linewidth=2, linestyle='--', label='Validation loss')
@@ -265,7 +267,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     plt.legend(loc='best')
     plt.show()
     
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(x_train, train_auc_truncated, c='k', linewidth=2, label='Training auc')
     plt.plot(x_valid, valid_auc, c='r', linewidth=2, linestyle='--', label='Validation auc')
@@ -273,7 +275,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     plt.legend(loc='best')
     plt.show()
 
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(x_train, train_ads_truncated, c='k', linewidth=2, label='Training ADS')
     plt.plot(x_valid, valid_ads_sigs, c='r', linewidth=2, linestyle='--', label='Validation ADS')
@@ -281,7 +283,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     plt.legend(loc='best')
     plt.show()
 
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(x_valid, valid_ads_threshs, c='k', linewidth=2, label='Validation Thresholds')
 
@@ -290,7 +292,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     plt.show()
 
     curr_valid_ads = valid_ads[-1]
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(curr_valid_ads["thresholds"], curr_valid_ads["significances"], c='k', linewidth=2, label='Validation ADS')
 
@@ -298,7 +300,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     plt.title("Last Epoch Validation ADS per Threshold")
     plt.show()
 
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=figsize)
 
     plt.plot(curr_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], c='k', linewidth=2, label='ROC Curve')
 
