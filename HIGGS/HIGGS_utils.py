@@ -10,6 +10,30 @@ data_dir = str(Path(__file__).resolve().parent)
 
 # %%
 
+class AsimovLoss(nn.Module):
+    def __init__(self, s_tot, b_tot, sig_b_tot):
+        super(AsimovLoss, self).__init__()
+        self.s_tot = s_tot
+        self.b_tot = b_tot
+        self.sig_b_tot = sig_b_tot
+        self.epsilon = 1e-8
+    
+    def AsimovSignificance(self, s, b, sig_b):
+        term1 = (s + b) * torch.log((s + b) * (b + sig_b * sig_b) / (torch.square(b) + (s + b) * torch.square(sig_b) + self.epsilon) + self.epsilon)
+        term2 = torch.square(b) * torch.log(1 + torch.square(sig_b) * s / (b * (b + torch.square(sig_b)) + self.epsilon)) / (torch.square(sig_b) + self.epsilon)
+        Z = torch.sqrt(2 * (term1 - term2))
+        return Z
+    
+    def forward(self, y_pred, y_true):
+        sWeight = self.s_tot / torch.sum(y_true)
+        bWeight = self.b_tot / torch.sum(1 - y_true)
+
+        s = sWeight * torch.sum(y_pred * y_true)
+        b = bWeight * torch.sum(y_pred * (1 - y_true))
+        sig_b = self.sig_b_tot * b
+
+        return 1 / self.AsimovSignificance(s, b, sig_b)
+
 class EarlyStopping:
     """Stops training when a monitored metric has stopped improving."""
     def __init__(self, patience=7, min_delta=0, path='checkpoint.pt'):
