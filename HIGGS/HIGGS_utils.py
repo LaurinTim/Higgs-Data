@@ -6,23 +6,31 @@ from torch import nn
 import matplotlib.pyplot as plt
 import json, glob
 from sklearn.metrics import roc_curve
+import logging
 
 data_dir = str(Path(__file__).resolve().parent)
 
 # %%
 
 class AsimovLoss(nn.Module):
-    def __init__(self, s_tot, b_tot, sig_b_tot):
+    def __init__(self, s_tot, b_tot, sys_uncertainty):
         super().__init__()
         self.s_tot = s_tot
         self.b_tot = b_tot
-        self.sig_b_tot = sig_b_tot
+        self.sys_uncertainty = sys_uncertainty
         self.epsilon = 1e-8
-    
+
     def AsimovSignificance(self, s, b, sig_b):
-        term1 = (s + b) * torch.log((s + b) * (b + sig_b * sig_b) / (torch.square(b) + (s + b) * torch.square(sig_b) + self.epsilon) + self.epsilon)
-        term2 = torch.square(b) * torch.log(1 + torch.square(sig_b) * s / (b * (b + torch.square(sig_b)) + self.epsilon)) / (torch.square(sig_b) + self.epsilon)
-        Z = torch.sqrt(2 * (term1 - term2))
+        # If s/b is very small (smaller than 0) use the taylor expansion to get the ADS
+        # Otherwise floating point errors can occur when s<<b
+        if False and s/b < 1e-4:
+            Z = s / torch.sqrt(b + torch.square(sig_b))
+        
+        else:
+            term1 = (s + b) * torch.log((s + b) * (b + torch.square(sig_b)) / (torch.square(b) + (s + b) * torch.square(sig_b) + self.epsilon) + self.epsilon)
+            term2 = (torch.square(b) / (torch.square(sig_b) + self.epsilon)) * torch.log(1 + torch.square(sig_b) * s / (b * (b + torch.square(sig_b)) + self.epsilon))
+            Z = torch.sqrt(2 * (term1 - term2))
+
         return Z
     
     def forward(self, y_pred, y_true):
@@ -31,9 +39,46 @@ class AsimovLoss(nn.Module):
 
         s = sWeight * torch.sum(y_pred * y_true)
         b = bWeight * torch.sum(y_pred * (1 - y_true))
-        sig_b = self.sig_b_tot * b
+        sig_b = self.sys_uncertainty * b
 
-        return 1 / self.AsimovSignificance(s, b, sig_b)
+        s = s.double()
+        b = b.double()
+        sig_b = sig_b.double()
+
+        Z = self.AsimovSignificance(s, b, sig_b)
+        """
+        print(sWeight)
+        print(bWeight)
+        print(s)
+        print(b)
+        print(sig_b)
+        print(Z)
+        print()
+        """
+        return 1 / Z
+
+class SignificanceLoss(nn.Module):
+    def __init__(self, s_tot, b_tot):
+        super().__init__()
+        self.s_tot = s_tot
+        self.b_tot = b_tot
+        self.epsilon = 1e-8
+    
+    def forward(self, y_pred, y_true):
+        assert torch.sum(y_true) != 0, "ERROR: BATCH CONTAINS ONLY BACKGROUND EVENTS"
+        assert torch.sum(y_true) != len(y_true), "ERROR: BATCH CONTAINS ONLY SIGNAL EVENTS"
+        
+
+        sWeight = self.s_tot / torch.sum(y_true)
+        bWeight = self.b_tot / torch.sum(1 - y_true)
+
+        s = sWeight * torch.sum(y_pred * y_true)
+        b = bWeight * torch.sum(y_pred * (1 - y_true))
+
+        s = s.double()
+        b = b.double()
+
+        return (b) / (torch.square(s) + self.epsilon)
 
 def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     """
@@ -81,33 +126,7 @@ def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     
     return Z
 
-def roc_custom_thresholds(y_true, y_pred, thresholds):
-    # Ensure inputs are numpy arrays
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-    
-    # Sort predictions for the positive and negative classes
-    pos_scores = np.sort(y_pred[y_true == 1])
-    neg_scores = np.sort(y_pred[y_true == 0])
-    
-    n_pos = len(pos_scores)
-    n_neg = len(neg_scores)
-
-    # Use searchsorted to find how many scores are BELOW each threshold
-    # The number of True Positives is (Total Positives - Positives below threshold)
-    tp_below_threshold = np.searchsorted(pos_scores, thresholds, side='left')
-    fp_below_threshold = np.searchsorted(neg_scores, thresholds, side='left')
-    
-    tp = n_pos - tp_below_threshold
-    fp = n_neg - fp_below_threshold
-    
-    # Calculate rates
-    tpr = tp / n_pos if n_pos > 0 else np.zeros_like(thresholds)
-    fpr = fp / n_neg if n_neg > 0 else np.zeros_like(thresholds)
-    
-    return fpr, tpr
-
-def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1, num_thresholds=101, ret_full=True):
+def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1, ret_full=True):
     """
     Scans all thresholds to find the one that maximizes discovery significance.
     
@@ -126,8 +145,6 @@ def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, s
     # 1. Compute ROC curve to get efficiency (tpr) and rejection (1-fpr) at all thresholds
     # fpr = False Positive Rate (Background Efficiency)
     # tpr = True Positive Rate (Signal Efficiency)
-    #thresholds = np.linspace(0, 1, num_thresholds)
-    #fpr, tpr = roc_custom_thresholds(y_true, y_pred, thresholds)
     fpr, tpr, thresholds = roc_curve(y_true, y_pred)
     
     # 2. Scale efficiencies to event counts
@@ -143,6 +160,8 @@ def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, s
     
     # 4. Calculate significance for all thresholds at once
     significances = calculate_asimov_significance(s_counts, b_counts, sigma_b_counts, b_min=b_min)
+    mask = (tpr * sum(y_true) >= 5)
+    significances = significances * mask
     
     # 5. Find the maximum
     best_idx = np.argmax(significances)
@@ -152,7 +171,13 @@ def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, s
     # Corresponding signal and background events at this threshold
     best_s = s_counts[best_idx]
     best_b = b_counts[best_idx]
-    
+    """
+    print(best_threshold)
+    print(max_sig)
+    print(best_s)
+    print(best_b)
+    print(list(zip(thresholds, tpr, fpr)))
+    """
     if ret_full:
         return {
             "optimal_threshold": best_threshold,
@@ -244,11 +269,12 @@ class DenseBlock(nn.Module):
         logits = self.stack(x)
         return logits
     
-def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, valid_ads, n=300) -> None:
-    figsize = (10, 7)
+def plot_training_info_old(train_loss, valid_loss, train_auc, valid_auc, train_ads, valid_ads, valid_labels, valid_outputs, n=300, compare_prev_epoch=0) -> None:
+    figsize = (8, 4.5)
 
     total_epochs = len(valid_loss)
     
+    curr_valid_ads = valid_ads[-1]
     valid_ads_sigs = [val["max_significance"] for val in valid_ads]
     valid_ads_threshs = [val["optimal_threshold"] for val in valid_ads]
 
@@ -259,55 +285,151 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
     x_valid = np.linspace(0, total_epochs-1, total_epochs)
 
-    plt.figure(figsize=figsize)
-
-    plt.plot(x_train, train_loss_truncated, c='k', linewidth=2, label='Training loss')
-    plt.plot(x_valid, valid_loss, c='r', linewidth=2, linestyle='--', label='Validation loss')
-
-    plt.legend(loc='best')
-    plt.show()
+    def single_plot(x, y, label, title=None, xlabel=None, ylabel=None):
+        plt.figure(figsize=figsize)
+        plt.plot(x, y, c='k', linewidth=2, label=label)
+        plt.legend(loc='best')
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+        plt.show()
     
-    plt.figure(figsize=figsize)
+    def double_plot(x1, x2, y1, y2, label1, label2, title=None, xlabel=None, ylabel=None):
+        plt.figure(figsize=figsize)
+        plt.plot(x1, y1, c='k', linewidth=2, label=label1)
+        plt.plot(x2, y2, c='r', linewidth=2, linestyle='--', label=label2)
+        plt.legend(loc='best')
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+        plt.show()
 
-    plt.plot(x_train, train_auc_truncated, c='k', linewidth=2, label='Training auc')
-    plt.plot(x_valid, valid_auc, c='r', linewidth=2, linestyle='--', label='Validation auc')
+    double_plot(x_train, x_valid, train_loss_truncated, valid_loss, 'Training loss', 'Validation loss', 'Loss per Epoch', 'Epoch', 'Loss')
+    double_plot(x_train, x_valid, train_auc_truncated, valid_auc, 'Training AUC', 'Validation AUC', 'AUC per Epoch', 'Epoch', 'AUC')
+    double_plot(x_train, x_valid, train_ads_truncated, valid_ads_sigs, 'Training ADS', 'Validation ADS', 'ADS per Epoch', 'Epoch', 'ADS')
+    single_plot(x_valid, valid_ads_threshs, 'Validation Thresholds', 'Validation best Thresholds for ADS', 'Epoch', 'Threshold')
 
-    plt.legend(loc='best')
+    if compare_prev_epoch > 0 and total_epochs > compare_prev_epoch:
+        compare_valid_ads = valid_ads[-(compare_prev_epoch+1)]
+        double_plot(curr_valid_ads["thresholds"], compare_valid_ads["thresholds"], curr_valid_ads["significances"], compare_valid_ads["significances"], 
+                    f'Epoch {total_epochs} Validation ADS', f'Epoch {total_epochs - compare_prev_epoch} Validation ADS', 'ADS per Threshold', 'Threshold', 'ADS [σ]')
+        double_plot(curr_valid_ads["false_positive_rates"], compare_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], compare_valid_ads["true_positive_rates"], 
+                    f'Epoch {total_epochs} Validation ADS', f'Epoch {total_epochs - compare_prev_epoch} Validation ADS', 'ROC Curve', 'False Positive Rate', 'True Positive Rate')
+
+    else:
+        single_plot(curr_valid_ads["thresholds"], curr_valid_ads["significances"], 'Validation ADS', 'ADS per Threshold', 'Threshold', 'ADS [σ]')
+        single_plot(curr_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], 'Validation ADS', 'ROC Curve', 'False Positive Rate', 'True Positive Rate')
+
+    plot_output_histogram_old(valid_labels, valid_outputs)
+
+def plot_output_histogram_old(labels, outputs):
+    outputs_background = outputs[labels == 0]
+    outputs_signal = outputs[labels == 1]
+
+    bins = np.linspace(0, 1, 101)
+
+    plt.figure(figsize=(8, 4.5))
+
+    plt.hist(outputs_background, bins=bins, density=True, histtype='bar', color='b', label='Background')
+    plt.hist(outputs_signal, bins=bins, density=True, histtype='step', color='r', linewidth=2, label='Signal')
+
+    plt.title("Histograms of the predicted values")
+    plt.xlabel("Predicted Value")
+    plt.ylabel("Prevalence")
+    plt.legend(loc="best")
+
     plt.show()
 
-    plt.figure(figsize=figsize)
+def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, valid_ads, valid_labels, valid_outputs, n=300, compare_prev_epoch=0, save_fig=None) -> None:
+    fig = plt.figure(figsize=(12, 16), constrained_layout=True)
+    gs = fig.add_gridspec(13, 2)
+    ax1 = fig.add_subplot(gs[:4, :])
+    ax2 = fig.add_subplot(gs[4:7, 0])
+    ax3 = fig.add_subplot(gs[4:7, 1])
+    ax4 = fig.add_subplot(gs[7:10, 0])
+    ax5 = fig.add_subplot(gs[7:10, 1])
+    ax6 = fig.add_subplot(gs[10:, 0])
+    ax7 = fig.add_subplot(gs[10:, 1])
 
-    plt.plot(x_train, train_ads_truncated, c='k', linewidth=2, label='Training ADS')
-    plt.plot(x_valid, valid_ads_sigs, c='r', linewidth=2, linestyle='--', label='Validation ADS')
-
-    plt.legend(loc='best')
-    plt.show()
-
-    plt.figure(figsize=figsize)
-
-    plt.plot(x_valid, valid_ads_threshs, c='k', linewidth=2, label='Validation Thresholds')
-
-    plt.legend(loc='best')
-    plt.title("Validation best Thresholds for ADS")
-    plt.show()
-
+    total_epochs = len(valid_loss)
+    
     curr_valid_ads = valid_ads[-1]
-    plt.figure(figsize=figsize)
+    valid_ads_sigs = [val["max_significance"] for val in valid_ads]
+    valid_ads_threshs = [val["optimal_threshold"] for val in valid_ads]
 
-    plt.plot(curr_valid_ads["thresholds"], curr_valid_ads["significances"], c='k', linewidth=2, label='Validation ADS')
+    train_loss_truncated = np.array(train_loss[:(len(train_loss) - (len(train_loss) % n))]).reshape(-1, n).mean(axis=1)
+    train_auc_truncated = np.array(train_auc[:(len(train_auc) - (len(train_auc) % n))]).reshape(-1, n).mean(axis=1)
+    train_ads_truncated = np.array(train_ads[:(len(train_ads) - (len(train_ads) % n))]).reshape(-1, n).mean(axis=1)
 
-    plt.legend(loc='best')
-    plt.title("Last Epoch Validation ADS per Threshold")
-    plt.show()
+    x_train = np.linspace(0, total_epochs-1, len(train_loss_truncated))
+    x_valid = np.linspace(0, total_epochs-1, total_epochs)
 
-    plt.figure(figsize=figsize)
-
-    plt.plot(curr_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], c='k', linewidth=2, label='ROC Curve')
-
-    plt.legend(loc='best')
-    plt.title("Last Epoch Validation ROC Curve")
-    plt.show()
+    def single_plot(ax, x, y, label, title=None, xlabel=None, ylabel=None):
+        ax.plot(x, y, c='k', linewidth=2, label=label)
+        ax.legend(loc='best')
+        if title:
+            ax.set_title(title)
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel)
     
+    def double_plot(ax, x1, x2, y1, y2, label1, label2, title=None, xlabel=None, ylabel=None):
+        ax.plot(x1, y1, c='k', linewidth=2, label=label1)
+        ax.plot(x2, y2, c='r', linewidth=2, linestyle='--', label=label2)
+        ax.legend(loc='best')
+        if title:
+            ax.set_title(title)
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel)
+
+    double_plot(ax1, x_train, x_valid, train_loss_truncated, valid_loss, 'Training loss', 'Validation loss', 'Loss per Epoch', 'Epoch', 'Loss')
+    double_plot(ax2, x_train, x_valid, train_auc_truncated, valid_auc, 'Training AUC', 'Validation AUC', 'AUC per Epoch', 'Epoch', 'AUC')
+    double_plot(ax3, x_train, x_valid, train_ads_truncated, valid_ads_sigs, 'Training ADS', 'Validation ADS', 'ADS per Epoch', 'Epoch', 'ADS')
+    single_plot(ax4, x_valid, valid_ads_threshs, 'Validation Thresholds', 'Validation best Thresholds for ADS', 'Epoch', 'Threshold')
+
+    if compare_prev_epoch > 0 and total_epochs > compare_prev_epoch:
+        compare_valid_ads = valid_ads[-(compare_prev_epoch+1)]
+        double_plot(ax5, curr_valid_ads["thresholds"], compare_valid_ads["thresholds"], curr_valid_ads["significances"], compare_valid_ads["significances"], 
+                    f'Epoch {total_epochs} Validation ADS', f'Epoch {total_epochs - compare_prev_epoch} Validation ADS', 'ADS per Threshold', 'Threshold', 'ADS [σ]')
+        double_plot(ax6, curr_valid_ads["false_positive_rates"], compare_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], compare_valid_ads["true_positive_rates"], 
+                    f'Epoch {total_epochs} Validation ADS', f'Epoch {total_epochs - compare_prev_epoch} Validation ADS', 'ROC Curve', 'False Positive Rate', 'True Positive Rate')
+
+    else:
+        single_plot(ax5, curr_valid_ads["thresholds"], curr_valid_ads["significances"], 'Validation ADS', 'ADS per Threshold', 'Threshold', 'ADS [σ]')
+        single_plot(ax6, curr_valid_ads["false_positive_rates"], curr_valid_ads["true_positive_rates"], 'Validation ADS', 'ROC Curve', 'False Positive Rate', 'True Positive Rate')
+
+    plot_output_histogram(ax7, valid_labels, valid_outputs)
+
+    if save_fig:
+        fig.savefig(Path(save_fig), bbox_inches="tight")
+        plt.close(fig)
+    
+    else:
+        plt.show()
+
+def plot_output_histogram(ax, labels, outputs):
+    outputs_background = outputs[labels == 0]
+    outputs_signal = outputs[labels == 1]
+
+    bins = np.linspace(0, 1, 101)
+
+    ax.hist(outputs_background, bins=bins, density=True, histtype='bar', color='b', label='Background')
+    ax.hist(outputs_signal, bins=bins, density=True, histtype='step', color='r', linewidth=2, label='Signal')
+
+    ax.set_title("Histograms of the predicted values")
+    ax.set_xlabel("Predicted Value")
+    ax.set_ylabel("Prevalence")
+    ax.legend(loc="best")    
+
 def get_feature_spec():
     return {
         "label": tf.io.FixedLenFeature([], tf.int64),
@@ -326,10 +448,21 @@ def make_ds(files, batch=2**11, shuffle=False):
     if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
     return ds.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
+def setup_logging():
+    logger = logging.getLogger("train")
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
 
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
+    out_dir = Path("logs")
+    fh = logging.FileHandler(out_dir / "HIGGS.log")
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
 
+    logger.propagate = False
 
+    return logger
 
 
 
@@ -412,3 +545,8 @@ def make_ds(files, batch=2**11, shuffle=False):
 
 
 
+
+
+
+
+# %%
