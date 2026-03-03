@@ -5,3 +5,4 @@ __pycache__/
 HIGGS/__pycache__/
 SUSY/__pycache__/
 .venv/
+.HIGGS/logs/
