@@ -7,3 +7,5 @@ SUSY/__pycache__/
 .venv/
 HIGGS/logs/
 SUSY/logs/
+HIGGS/test.ipynb
+SUSY/test.ipynb
