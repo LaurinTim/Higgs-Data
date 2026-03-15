@@ -9,20 +9,6 @@ import json, glob
 data_dir = str(Path(__file__).resolve().parent)
 
 # %%
-
-class DenseBlock(nn.Module):
-    def __init__(self, input_size, output_size, activation, dropout_rate=0.1):
-        super().__init__()
-        self.stack = nn.Sequential(
-            nn.Linear(input_size, output_size),
-            nn.BatchNorm1d(num_features=output_size),
-            activation,
-            nn.Dropout(p=dropout_rate)
-        )
-        
-    def forward(self, x):
-        logits = self.stack(x)
-        return logits
     
 def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, n=300) -> None:
     total_epochs = len(valid_loss)
