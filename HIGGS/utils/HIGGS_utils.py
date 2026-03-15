@@ -1,10 +1,8 @@
-import tensorflow as tf, numpy as np, pandas as pd
-import os, sys
+import tensorflow as tf, numpy as np
 from pathlib import Path
 import torch
 from torch import nn
 import matplotlib.pyplot as plt
-import json, glob
 from sklearn.metrics import roc_curve
 import logging
 
