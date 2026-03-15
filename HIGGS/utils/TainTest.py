@@ -1,9 +1,12 @@
 import numpy as np, pandas as pd
 import torch, copy
+from torch import nn
 from sklearn.metrics import roc_auc_score
 from HIGGS_utils import find_optimal_asimov_threshold
+from typing import Any
+import logging
 
-def train_loop(logger, data, model, loss_fn, optimizer, steps_per_epoch, device, s_tot, b_tot, sys_uncertainty):
+def train_loop(logger: logging.Logger, data: Any, model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torch.optim.Optimizer, steps_per_epoch: int, device: torch.device, s_tot: float, b_tot: float, sys_uncertainty: float) -> tuple[list[float], list[float], list[float]]:
     losses = []
     aucs = []
     adss = []
@@ -56,7 +59,7 @@ def train_loop(logger, data, model, loss_fn, optimizer, steps_per_epoch, device,
         
     return losses, aucs, ads_sigs
             
-def valid_loop(logger, data, model, loss_fn, validation_steps, device, s_tot, b_tot, sys_uncertainty):
+def valid_loop(logger: logging.Logger, data: Any, model: torch.nn.Module, loss_fn: torch.nn.Module, validation_steps: int, device: torch.device, s_tot: float, b_tot: float, sys_uncertainty: float) -> tuple[np.ndarray, np.ndarray, float, float, dict[str, Any]]:
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -109,7 +112,7 @@ def valid_loop(logger, data, model, loss_fn, validation_steps, device, s_tot, b_
     
     return np.array(val_labels), np.array(val_preds), avg_loss, auc, ads
 
-def get_prediction_train(data, model, loss_fn, device, training_size):
+def get_prediction_train(data: Any, model: nn.Module, loss_fn: nn.modules.loss._Loss, device: torch.device, training_size: int) -> tuple[list[float], list[float]]:
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -143,7 +146,7 @@ def get_prediction_train(data, model, loss_fn, device, training_size):
     
     return ret_labels, ret_preds
 
-def get_prediction(data, model, loss_fn, device, s_tot, b_tot, sys_uncertainty):
+def get_prediction(data: Any, model: nn.Module, loss_fn: nn.modules.loss._Loss, device: torch.device, s_tot: float, b_tot: float, sys_uncertainty: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()

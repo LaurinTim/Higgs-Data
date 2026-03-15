@@ -3,22 +3,24 @@ from pathlib import Path
 import torch
 from torch import nn
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from sklearn.metrics import roc_curve
 import logging
+from typing import Any
 
 data_dir = str(Path(__file__).resolve().parent)
 
 # %%
 
 class AsimovLoss(nn.Module):
-    def __init__(self, s_tot, b_tot, sys_uncertainty):
+    def __init__(self, s_tot: float, b_tot: float, sys_uncertainty: float):
         super().__init__()
-        self.s_tot = s_tot
-        self.b_tot = b_tot
-        self.sys_uncertainty = sys_uncertainty
-        self.epsilon = 1e-8
+        self.s_tot: float = s_tot
+        self.b_tot: float = b_tot
+        self.sys_uncertainty: float = sys_uncertainty
+        self.epsilon: float = 1e-8
 
-    def AsimovSignificance(self, s, b, sig_b):
+    def AsimovSignificance(self, s: torch.Tensor, b: torch.Tensor, sig_b: torch.Tensor) -> torch.Tensor:
         # If s/b is very small (smaller than 0) use the taylor expansion to get the ADS
         # Otherwise floating point errors can occur when s<<b
         if False and s/b < 1e-4:
@@ -31,7 +33,7 @@ class AsimovLoss(nn.Module):
 
         return Z
     
-    def forward(self, y_pred, y_true):
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         sWeight = self.s_tot / torch.sum(y_true)
         bWeight = self.b_tot / torch.sum(1 - y_true)
 
@@ -56,13 +58,13 @@ class AsimovLoss(nn.Module):
         return 1 / Z
 
 class SignificanceLoss(nn.Module):
-    def __init__(self, s_tot, b_tot):
+    def __init__(self, s_tot: float, b_tot: float):
         super().__init__()
-        self.s_tot = s_tot
-        self.b_tot = b_tot
-        self.epsilon = 1e-8
+        self.s_tot: float = s_tot
+        self.b_tot: float = b_tot
+        self.epsilon: float = 1e-8
     
-    def forward(self, y_pred, y_true):
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         assert torch.sum(y_true) != 0, "ERROR: BATCH CONTAINS ONLY BACKGROUND EVENTS"
         assert torch.sum(y_true) != len(y_true), "ERROR: BATCH CONTAINS ONLY SIGNAL EVENTS"
         
@@ -78,7 +80,7 @@ class SignificanceLoss(nn.Module):
 
         return (b) / (torch.square(s) + self.epsilon)
 
-def calculate_asimov_significance(s, b, sigma_b, b_min=1):
+def calculate_asimov_significance(s: float | np.ndarray, b: float | np.ndarray, sigma_b: float | np.ndarray, b_min: float = 1) -> float | np.ndarray:
     """
     Calculates the Asimov discovery significance (Z_A).
     
@@ -124,7 +126,7 @@ def calculate_asimov_significance(s, b, sigma_b, b_min=1):
     
     return Z
 
-def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, sys_uncertainty=0.05, b_min=1, ret_full=True):
+def find_optimal_asimov_threshold(y_true: np.ndarray, y_pred: np.ndarray, weight_s: float = 100, weight_b: float = 1000, sys_uncertainty: float = 0.05, b_min: float = 1, ret_full: bool = True) -> dict[str, Any]:
     """
     Scans all thresholds to find the one that maximizes discovery significance.
     
@@ -197,7 +199,7 @@ def find_optimal_asimov_threshold(y_true, y_pred, weight_s=100, weight_b=1000, s
 
 class EarlyStopping:
     """Stops training when a monitored metric has stopped improving."""
-    def __init__(self, patience=7, min_delta=0, path='checkpoint.pt'):
+    def __init__(self, patience: int = 7, min_delta: float = 0, path: str = 'checkpoint.pt'):
         # Check self.counter if the loss was lower (better) than for the current iteration
         """
         Args:
@@ -208,14 +210,14 @@ class EarlyStopping:
             path (str): Path to save the best model file.
                         Default: 'checkpoint.pt'
         """
-        self.patience = patience
-        self.min_delta = min_delta
-        self.path = data_dir + '\\EarlyStopping model\\' + path
-        self.counter = 0
-        self.best_loss = None
-        self.early_stop = False
+        self.patience: int = patience
+        self.min_delta: float = min_delta
+        self.path: str = data_dir + '\\EarlyStopping model\\' + path
+        self.counter: int = 0
+        self.best_loss: float | None = None
+        self.early_stop: bool = False
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss: float, model: nn.Module) -> None:
         if self.best_loss is None:
             self.best_loss = val_loss
             self.save_checkpoint(val_loss, model)
@@ -228,11 +230,11 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 self.early_stop = True
 
-    def save_checkpoint(self, val_loss, model):
-        '''Saves model when validation loss decrease.'''
+    def save_checkpoint(self, model: nn.Module) -> None:
+        '''Saves model'''
         torch.save(model.state_dict(), self.path)
         
-def count_samples(files):
+def count_samples(files: list[str]) -> int:
     '''
     Get the number of samples in files.
 
@@ -254,7 +256,7 @@ def count_samples(files):
     return n
 
 class DenseBlock(nn.Module):
-    def __init__(self, input_size, output_size, activation, dropout_rate=0.1):
+    def __init__(self, input_size: int, output_size: int, activation: nn.Module, dropout_rate: float = 0.1):
         super().__init__()
         self.stack = nn.Sequential(
             nn.Linear(input_size, output_size),
@@ -263,11 +265,11 @@ class DenseBlock(nn.Module):
             nn.Dropout(p=dropout_rate)
         )
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         logits = self.stack(x)
         return logits
 
-def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, valid_ads, valid_labels, valid_outputs, n=300, compare_prev_epoch=0, save_fig=None) -> None:
+def plot_training_info(train_loss: list[float], valid_loss: list[float], train_auc: list[float], valid_auc: list[float], train_ads: list[float], valid_ads: list[dict[str, Any]], valid_labels: np.ndarray, valid_outputs: np.ndarray, n: int = 300, compare_prev_epoch: int = 0, save_fig: str | None = None) -> None:
     fig = plt.figure(figsize=(12, 16), constrained_layout=True)
     gs = fig.add_gridspec(13, 2)
     ax1 = fig.add_subplot(gs[:4, :])
@@ -337,7 +339,7 @@ def plot_training_info(train_loss, valid_loss, train_auc, valid_auc, train_ads, 
     else:
         plt.show()
 
-def plot_output_histogram(ax, labels, outputs):
+def plot_output_histogram(ax: Axes, labels: np.ndarray, outputs: np.ndarray) -> None:
     outputs_background = outputs[labels == 0]
     outputs_signal = outputs[labels == 1]
 
@@ -351,25 +353,25 @@ def plot_output_histogram(ax, labels, outputs):
     ax.set_ylabel("Prevalence")
     ax.legend(loc="best")    
 
-def get_feature_spec():
+def get_feature_spec() -> dict[str, tf.io.FixedLenFeature]:
     return {
         "label": tf.io.FixedLenFeature([], tf.int64),
         **{f"f{i}": tf.io.FixedLenFeature([], tf.float32) for i in range(28)}
     }
 
-def parse_fn(ex_proto):
+def parse_fn(ex_proto: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     ex = tf.io.parse_single_example(ex_proto, get_feature_spec())
     label = ex.pop("label")
     features = tf.stack([ex[f"f{i}"] for i in range(28)], axis=0)
     return features, label
 
-def make_ds(files, batch=2**11, shuffle=False):
+def make_ds(files: list[str], batch: int = 2**11, shuffle: bool = False) -> tf.data.Dataset:
     #files = glob.glob(pattern)
     ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
     if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
     return ds.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
-def setup_logging(filemode="a"):
+def setup_logging(filemode: str = "a") -> logging.Logger:
     logger = logging.getLogger("train")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
