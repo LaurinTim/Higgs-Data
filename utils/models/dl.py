@@ -36,3 +36,59 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         torch.save(model.state_dict(), self.save_path)
+    
+class DenseBlock(nn.Module):
+    def __init__(self, input_size, output_size, activation, dropout_rate=0.1):
+        super().__init__()
+        self.stack = nn.Sequential(
+            nn.Linear(input_size, output_size),
+            nn.BatchNorm1d(num_features=output_size),
+            activation,
+            nn.Dropout(p=dropout_rate)
+        )
+        
+    def forward(self, x):
+        logits = self.stack(x)
+        return logits
+
+class Deep(nn.Module):
+    def __init__(self, units=28, p=0.1, num_blocks=8):
+        super().__init__()
+        assert num_blocks >= 2, "At least two blocks are required"
+        self.stack = nn.Sequential(
+            DenseBlock(28, units, nn.GELU(), p)
+        )
+
+        for i in range(num_blocks-2):
+            self.stack.append(DenseBlock(units, units, nn.GELU(), p))
+        
+        self.stack.append(DenseBlock(units, units, nn.Tanh(), p))
+        self.stack.append(nn.Linear(units, 1))
+
+    def forward(self, x):
+        logits = self.stack(x)
+        return logits
+    
+class Wide(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear_stack = nn.Sequential(
+            nn.Linear(28, 1),
+        )
+
+    def forward(self, x):
+        logits = self.linear_stack(x)
+        return logits
+
+class DeepWide(nn.Module):
+    def __init__(self, deep, wide, deep_ratio=0.5):
+        super().__init__()
+        self.deep = deep
+        self.wide = wide
+        self.deep_ratio = deep_ratio
+
+    def forward(self, x):
+        deep_logits = self.deep(x)
+        wide_logits = self.wide(x)
+        logits = self.deep_ratio * deep_logits + (1 - self.deep_ratio) * wide_logits
+        return logits
