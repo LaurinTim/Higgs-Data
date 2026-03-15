@@ -371,7 +371,7 @@ def make_ds(files, batch=2**11, shuffle=False):
     if shuffle: ds = ds.shuffle(1_000_000, reshuffle_each_iteration=True)
     return ds.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE).batch(batch).prefetch(tf.data.AUTOTUNE).cache().repeat()
 
-def setup_logging():
+def setup_logging(filemode="a"):
     logger = logging.getLogger("train")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
@@ -379,7 +379,7 @@ def setup_logging():
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
     out_dir = Path("logs")
-    fh = logging.FileHandler(out_dir / "HIGGS.log")
+    fh = logging.FileHandler(out_dir / "HIGGS.log", mode=filemode)
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
