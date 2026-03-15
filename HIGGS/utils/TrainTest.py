@@ -2,7 +2,7 @@ import numpy as np, pandas as pd
 import torch, copy
 from torch import nn
 from sklearn.metrics import roc_auc_score
-from HIGGS_utils import find_optimal_asimov_threshold
+from .HIGGS_utils import find_optimal_asimov_threshold
 from typing import Any
 import logging
 

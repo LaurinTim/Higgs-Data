@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from HIGGS_utils import DenseBlock
+from .HIGGS_utils import DenseBlock
 
 class Deep(nn.Module):
     def __init__(self, units: int = 28, p: float = 0.1):
