@@ -9,8 +9,8 @@ import tensorflow as tf
 from pathlib import Path 
 
 def get_files(data_dir):
-    train_files = tf.io.gfile.glob(str(data_dir / 'training' / '*.tfrecord'))[:2]
-    val_files = tf.io.gfile.glob(str(data_dir / 'validation' / '*.tfrecord'))[:2]
+    train_files = tf.io.gfile.glob(str(data_dir / 'training' / '*.tfrecord'))
+    val_files = tf.io.gfile.glob(str(data_dir / 'validation' / '*.tfrecord'))
     return train_files, val_files
 
 def make_ds(name, batch=2**11, shuffle=False):
@@ -47,8 +47,8 @@ def count_samples(name):
     else:
         raise ValueError(f"Unknown dataset name: {name}")
     
-    files_train = tf.io.gfile.glob(str(data_dir / 'training' / '*.tfrecord'))[:2]
-    files_val = tf.io.gfile.glob(str(data_dir / 'validation' / '*.tfrecord'))[:2]
+    files_train = tf.io.gfile.glob(str(data_dir / 'training' / '*.tfrecord'))
+    files_val = tf.io.gfile.glob(str(data_dir / 'validation' / '*.tfrecord'))
     
     train_count = 0
     for filename in files_train:
