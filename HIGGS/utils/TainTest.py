@@ -1,6 +1,7 @@
 import numpy as np, pandas as pd
 import torch, copy
 from sklearn.metrics import roc_auc_score
+from HIGGS_utils import find_optimal_asimov_threshold
 
 def train_loop(logger, data, model, loss_fn, optimizer, steps_per_epoch, device, s_tot, b_tot, sys_uncertainty):
     losses = []
@@ -29,7 +30,7 @@ def train_loop(logger, data, model, loss_fn, optimizer, steps_per_epoch, device,
         outputs_numpy = outputs.detach().cpu().numpy()
 
         aucs.append(roc_auc_score(labels_numpy, outputs_numpy))
-        adss.append(u.find_optimal_asimov_threshold(
+        adss.append(find_optimal_asimov_threshold(
             labels_numpy, outputs_numpy, 
             weight_s=s_tot, weight_b=b_tot, sys_uncertainty=sys_uncertainty, 
             b_min=1, ret_full=False))
@@ -55,7 +56,7 @@ def train_loop(logger, data, model, loss_fn, optimizer, steps_per_epoch, device,
         
     return losses, aucs, ads_sigs
             
-def valid_loop(data, model, loss_fn, validation_steps, device, s_tot, b_tot, sys_uncertainty):
+def valid_loop(logger, data, model, loss_fn, validation_steps, device, s_tot, b_tot, sys_uncertainty):
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -87,7 +88,7 @@ def valid_loop(data, model, loss_fn, validation_steps, device, s_tot, b_tot, sys
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
 
-        ads = u.find_optimal_asimov_threshold(
+        ads = find_optimal_asimov_threshold(
             val_labels, val_preds, 
             weight_s=s_tot, weight_b=b_tot, sys_uncertainty=sys_uncertainty, 
             b_min=1e-8, ret_full=True)
@@ -173,7 +174,7 @@ def get_prediction(data, model, loss_fn, device, s_tot, b_tot, sys_uncertainty):
             
         avg_loss = sum_loss / max(sum_count, 1)
         auc = roc_auc_score(val_labels, val_preds)
-        ads = u.find_optimal_asimov_threshold(
+        ads = find_optimal_asimov_threshold(
             val_labels, val_preds, 
             weight_s=s_tot, weight_b=b_tot, sys_uncertainty=sys_uncertainty, 
             b_min=1e-8, num_thresholds=1001, ret_full=True)
